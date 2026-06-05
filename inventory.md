@@ -24,17 +24,17 @@ How to edit:
 Only people with write access to this repository can commit changes here, so
 the public listings can only be changed by you.
 
-| Section | Item | Size | Schools | Condition | Unit Price | Lot Price | Qty | Image |
-|---------|------|------|---------|-----------|-----------|-----------|-----|-------|
-| Girls | Navy polo | YS | Carrollton |  | 5 | 30 | 2 |  |
-| Girls | Gray polo | YS | Carrollton |  | 5 | 30 | 2 |  |
-| Girls | White polo | YS | Carrollton | Small marker blemish | 5 | 30 | 1 |  |
-| Girls | Pleat skort | 8R | Carrollton |  | 5 | 30 | 1 |  |
-| Girls | Twill walking shorts | 8R | Carrollton | Brand new with tags | 5 | 30 | 1 |  |
-| Boys | Navy polo | YM | Carrollton |  | 5 | 30 | 1 |  |
-| Boys | Navy polo (performance) | YM | Carrollton |  | 5 | 30 | 2 |  |
-| Boys | Gray polo | YM | Carrollton |  | 5 | 30 | 1 |  |
-| Boys | Gray polo | YM | Carrollton | Marker blemish | 5 | 30 | 1 |  |
-| Boys | White polo | YM | Carrollton |  | 5 | 30 | 1 |  |
-| Boys | Spirit shirt | YL | Carrollton |  | 5 | 30 | 1 |  |
-| Boys | Navy twill pants | 12R | Carrollton |  | 5 | 30 | 1 |  |
+| Section | Item | Size | Schools | Condition | Price | Qty | Image |
+|---------|------|------|---------|-----------|-------|-----|-------|
+| Girls | Navy polo | YS | Carrollton |  | 5 | 2 |  |
+| Girls | Gray polo | YS | Carrollton |  | 5 | 2 |  |
+| Girls | White polo | YS | Carrollton | Small marker blemish | 5 | 1 |  |
+| Girls | Pleat skort | 8R | Carrollton |  | 5 | 1 |  |
+| Girls | Twill walking shorts | 8R | Carrollton | Brand new with tags | 5 | 1 |  |
+| Boys | Navy polo | YM | Carrollton |  | 5 | 1 |  |
+| Boys | Navy polo (performance) | YM | Carrollton |  | 5 | 2 |  |
+| Boys | Gray polo | YM | Carrollton |  | 5 | 1 |  |
+| Boys | Gray polo | YM | Carrollton | Marker blemish | 5 | 1 |  |
+| Boys | White polo | YM | Carrollton |  | 5 | 1 |  |
+| Boys | Spirit shirt | YL | Carrollton |  | 5 | 1 |  |
+| Boys | Navy twill pants | 12R | Carrollton |  | 5 | 1 |  |

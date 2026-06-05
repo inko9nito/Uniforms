@@ -56,7 +56,6 @@ function Section({ title, items, localSold, manageMode, onToggleLocal }: Section
     (sum, i) => sum + (localSold.has(i.id) ? 0 : i.quantity),
     0,
   );
-  const lotPrice = items[0]?.lotPrice ?? 30;
 
   return (
     <BlockStack gap="400">
@@ -71,7 +70,7 @@ function Section({ title, items, localSold, manageMode, onToggleLocal }: Section
 
       <Banner tone="info">
         <Text as="p">
-          <strong>$5 each</strong> · or <strong>{`$${lotPrice} for the entire ${title.toLowerCase()} lot`}</strong>
+          <strong>$5 each</strong>
         </Text>
       </Banner>
 
