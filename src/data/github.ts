@@ -128,7 +128,7 @@ export function removeImageFromInventoryContent(
 
 // Column order in inventory.md:
 // Section(0) Item(1) Size(2) Schools(3) Condition(4) Price(5) Qty(6) Image(7) Link(8)
-const COL = { size: 2, qty: 6, image: 7 } as const;
+const COL = { size: 2, condition: 4, qty: 6, image: 7 } as const;
 
 /** Set a single cell (by column index) in a specific row of inventory.md. */
 export function setInventoryCell(
@@ -152,6 +152,9 @@ export function setInventoryCell(
 
 export const setInventorySize = (md: string, line: number, size: string) =>
   setInventoryCell(md, line, COL.size, size);
+
+export const setInventoryCondition = (md: string, line: number, condition: string) =>
+  setInventoryCell(md, line, COL.condition, condition);
 
 export const setInventoryQuantity = (md: string, line: number, qty: number) =>
   setInventoryCell(md, line, COL.qty, String(qty));
