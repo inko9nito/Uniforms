@@ -6,6 +6,8 @@ export interface Item {
   id: string;
   section: string;
   name: string;
+  /** Name shown to buyers — prefixed with the section (Girls/Boys) unless unisex. */
+  displayName: string;
   size: string;
   schools: SchoolName[];
   note?: string;
@@ -67,6 +69,15 @@ function quantityFrom(raw: string): number {
   return Number.isFinite(n) && n >= 0 ? n : 1;
 }
 
+/** Items that are the same for either gender and shouldn't be prefixed with a section. */
+const UNISEX = /spirit shirt/i;
+
+function displayNameFor(section: string, name: string): string {
+  if (UNISEX.test(name)) return name;
+  if (section === 'Girls' || section === 'Boys') return `${section} ${name}`;
+  return name;
+}
+
 export function parseInventory(md: string): Item[] {
   const lines = md.split('\n');
   const items: Item[] = [];
@@ -96,10 +107,13 @@ export function parseInventory(md: string): Item[] {
     const name = get('item');
     if (!name) continue;
 
+    const section = get('section') || 'Other';
+
     items.push({
       id: `item-${idx}`,
-      section: get('section') || 'Other',
+      section,
       name,
+      displayName: displayNameFor(section, name),
       size: get('size'),
       schools: parseSchools(get('school')),
       note: get('condition') || undefined,

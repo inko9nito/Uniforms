@@ -85,7 +85,7 @@ export function ItemCard({
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 4 }}>
                 <span style={truncate}>
                   <Text variant="headingSm" as="h3" truncate>
-                    {item.name}
+                    {item.displayName}
                   </Text>
                 </span>
 
