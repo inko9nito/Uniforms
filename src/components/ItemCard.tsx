@@ -1,4 +1,4 @@
-import { Badge, BlockStack, Box, Button, Card, InlineStack, Link, Text, Tooltip } from '@shopify/polaris';
+import { Badge, BlockStack, Box, Button, Card, Link, Text, Tooltip } from '@shopify/polaris';
 import { editLineUrl, type Item } from '../data/inventory';
 import { GarmentThumbnail } from './GarmentThumbnail';
 
@@ -97,14 +97,9 @@ export function ItemCard({ item, publishedSold, localSold, manageMode, onToggleL
               </div>
 
               <div style={{ marginTop: 'auto' }}>
-                <InlineStack gap="150" blockAlign="baseline">
-                  <Text variant="headingMd" as="p">
-                    {`$${item.unitPrice}`}
-                  </Text>
-                  <Text variant="bodySm" as="span" tone="subdued">
-                    {`$${item.lotPrice}/lot`}
-                  </Text>
-                </InlineStack>
+                <Text variant="headingMd" as="p">
+                  {`$${item.unitPrice}`}
+                </Text>
 
                 {manageMode && (
                   <Box paddingBlockStart="200">

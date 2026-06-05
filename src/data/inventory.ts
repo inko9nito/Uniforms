@@ -10,7 +10,6 @@ export interface Item {
   schools: SchoolName[];
   note?: string;
   unitPrice: number;
-  lotPrice: number;
   /** How many of this item are currently available. 0 means sold out. */
   quantity: number;
   /** Optional photo path (in repo, e.g. images/foo.jpg) or URL. Falls back to an illustration. */
@@ -96,8 +95,7 @@ export function parseInventory(md: string): Item[] {
       size: get('size'),
       schools: parseSchools(get('school')),
       note: get('condition') || undefined,
-      unitPrice: Number(get('unit')) || 0,
-      lotPrice: Number(get('lot')) || 0,
+      unitPrice: Number(get('price')) || 0,
       quantity: quantityFrom(get('qty')),
       image: get('image') || undefined,
       sourceLine: i + 1,
