@@ -40,53 +40,49 @@ export function ItemCard({ item, publishedSold, localSold, manageMode, onToggleL
     >
       <Card padding="0">
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          {item.image ? (
-            <img
-              src={resolveImage(item.image)}
-              alt={item.name}
-              loading="lazy"
-              style={{
-                height: 150,
-                width: '100%',
-                objectFit: 'cover',
-                display: 'block',
-                borderBottom: '1px solid #e3e5e7',
-              }}
-            />
-          ) : (
-            <GarmentThumbnail item={item} />
-          )}
+          <div style={{ position: 'relative' }}>
+            {item.image ? (
+              <img
+                src={resolveImage(item.image)}
+                alt={item.name}
+                loading="lazy"
+                style={{
+                  height: 160,
+                  width: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
+                  borderBottom: '1px solid #e3e5e7',
+                }}
+              />
+            ) : (
+              <GarmentThumbnail item={item} />
+            )}
+            <div style={{ position: 'absolute', top: 8, left: 8 }}>
+              {sold ? (
+                <Badge tone="critical">{publishedSold ? 'Sold' : 'Sold (your view)'}</Badge>
+              ) : (
+                <Badge tone="success">Available</Badge>
+              )}
+            </div>
+          </div>
 
           <Box padding="300">
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 8 }}>
-              <InlineStack align="space-between" blockAlign="start" gap="200" wrap={false}>
-                <span style={truncate}>
-                  <Text variant="headingMd" as="h3" truncate>
-                    {item.name}
-                  </Text>
-                </span>
-                {sold ? (
-                  <Badge tone="critical">{publishedSold ? 'Sold' : 'Sold (your view)'}</Badge>
-                ) : (
-                  <Badge tone="success">Available</Badge>
-                )}
-              </InlineStack>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 4 }}>
+              <span style={truncate}>
+                <Text variant="headingSm" as="h3" truncate>
+                  {item.name}
+                </Text>
+              </span>
 
-              <Text variant="bodyMd" as="p" tone="subdued">
-                Size {item.size}
-              </Text>
-
-              <InlineStack gap="100">
-                {item.schools.map((s) => (
-                  <Badge key={s} tone="info">
-                    {s}
-                  </Badge>
-                ))}
-              </InlineStack>
+              <span style={truncate}>
+                <Text variant="bodySm" as="span" tone="subdued">
+                  {`Size ${item.size} · ${item.schools.join(' & ')}`}
+                </Text>
+              </span>
 
               {/* Always reserve one line for the condition note so every card is
                   the same height. Long notes truncate and show fully on hover. */}
-              <div style={{ minHeight: 18 }}>
+              <div style={{ minHeight: 16 }}>
                 {item.note ? (
                   <Tooltip content={item.note} dismissOnMouseOut>
                     <span style={{ ...truncate, color: '#8a6116', fontSize: 12, cursor: 'help' }}>
@@ -99,12 +95,12 @@ export function ItemCard({ item, publishedSold, localSold, manageMode, onToggleL
               </div>
 
               <div style={{ marginTop: 'auto' }}>
-                <InlineStack align="space-between" blockAlign="center">
-                  <Text variant="headingLg" as="p">
+                <InlineStack gap="150" blockAlign="baseline">
+                  <Text variant="headingMd" as="p">
                     {`$${item.unitPrice}`}
                   </Text>
                   <Text variant="bodySm" as="span" tone="subdued">
-                    {`$${item.lotPrice} / lot`}
+                    {`$${item.lotPrice}/lot`}
                   </Text>
                 </InlineStack>
 
