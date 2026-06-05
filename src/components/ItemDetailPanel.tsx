@@ -87,7 +87,40 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
         pointerEvents: open ? 'auto' : 'none',
       }}
     >
-      {/* Scrollable content — no header bar; back button floats over image */}
+      {/* Back button fixed to the panel so it doesn't scroll away */}
+      <button
+        onClick={onClose}
+        aria-label="Go back"
+        style={{
+          position: 'absolute',
+          top: 12,
+          left: 12,
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.92)',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 1px 6px rgba(0,0,0,0.18)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 2,
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
+          <path
+            d="M12 4L6 10L12 16"
+            stroke="#303030"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      {/* Scrollable content */}
       <div
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -110,39 +143,6 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
               ) : (
                 <GarmentThumbnail item={current} />
               )}
-
-              {/* Floating back button overlaid on image */}
-              <button
-                onClick={onClose}
-                aria-label="Go back"
-                style={{
-                  position: 'absolute',
-                  top: 12,
-                  left: 12,
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.92)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 1px 6px rgba(0,0,0,0.18)',
-                  backdropFilter: 'blur(4px)',
-                  zIndex: 1,
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
-                  <path
-                    d="M12 4L6 10L12 16"
-                    stroke="#303030"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
             </div>
 
             {/* Product info */}
@@ -169,7 +169,7 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
                 {/* Properties */}
                 <BlockStack gap="300">
                   <InlineStack gap="400" blockAlign="center">
-                    <div style={{ minWidth: 48 }}>
+                    <div style={{ width: 80, flexShrink: 0 }}>
                       <Text as="span" tone="subdued">Campus</Text>
                     </div>
                     <InlineStack gap="150">
@@ -180,7 +180,7 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
                   </InlineStack>
                   {color && (
                     <InlineStack gap="400" blockAlign="center">
-                      <div style={{ minWidth: 48 }}>
+                      <div style={{ width: 80, flexShrink: 0 }}>
                         <Text as="span" tone="subdued">Color</Text>
                       </div>
                       <InlineStack gap="200" blockAlign="center">
@@ -199,13 +199,13 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
                     </InlineStack>
                   )}
                   <InlineStack gap="400" blockAlign="center">
-                    <div style={{ minWidth: 48 }}>
+                    <div style={{ width: 80, flexShrink: 0 }}>
                       <Text as="span" tone="subdued">Size</Text>
                     </div>
                     <Text as="span">{current.size}</Text>
                   </InlineStack>
                   <InlineStack gap="400" blockAlign="center">
-                    <div style={{ minWidth: 48 }}>
+                    <div style={{ width: 80, flexShrink: 0 }}>
                       <Text as="span" tone="subdued">Condition</Text>
                     </div>
                     {current.note ? (
