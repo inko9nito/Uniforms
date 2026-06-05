@@ -68,12 +68,6 @@ function Section({ title, items, localSold, manageMode, onToggleLocal }: Section
         </Badge>
       </InlineStack>
 
-      <Banner tone="info">
-        <Text as="p">
-          <strong>$5 each</strong>
-        </Text>
-      </Banner>
-
       <div
         style={{
           display: 'grid',
@@ -155,6 +149,7 @@ export default function App() {
             },
           ]}
         >
+          <Box paddingInline={{ xs: '400', sm: '500' }} paddingBlockStart="200">
           <BlockStack gap="600">
             <Banner tone="success">
               <Text as="p">
@@ -205,6 +200,7 @@ export default function App() {
               ))
             )}
           </BlockStack>
+          </Box>
         </Page>
       </Box>
     </AppProvider>
