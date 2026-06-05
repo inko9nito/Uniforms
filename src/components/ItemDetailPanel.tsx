@@ -10,6 +10,16 @@ interface Props {
   messengerUrl: string;
 }
 
+function colorFor(name: string): { hex: string; label: string } | null {
+  const n = name.toLowerCase();
+  if (n.includes('navy')) return { hex: '#26344f', label: 'Navy' };
+  if (n.includes('gray') || n.includes('grey')) return { hex: '#a8aeb8', label: 'Gray' };
+  if (n.includes('white')) return { hex: '#eef0f3', label: 'White' };
+  if (n.includes('khaki')) return { hex: '#ccbb98', label: 'Khaki' };
+  if (n.includes('black')) return { hex: '#1a1a1a', label: 'Black' };
+  return null;
+}
+
 export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
   const open = item !== null;
   const [current, setCurrent] = useState<Item | null>(item);
@@ -58,6 +68,7 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
   };
 
   const soldOut = current ? current.quantity <= 0 : false;
+  const color = current ? colorFor(current.name) : null;
 
   return (
     <div
@@ -141,16 +152,20 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
                   {current.displayName}
                 </Text>
 
-                <Text variant="heading2xl" as="p">
-                  {`$${current.unitPrice}`}
-                </Text>
-
-                <InlineStack gap="200" blockAlign="center">
+                {/* Price + availability badge inline */}
+                <InlineStack gap="300" blockAlign="center">
+                  <Text variant="heading2xl" as="p">
+                    {`$${current.unitPrice}`}
+                  </Text>
                   {soldOut ? (
                     <Badge tone="critical">Sold out</Badge>
                   ) : (
                     <Badge tone="success">{`${current.quantity} available`}</Badge>
                   )}
+                </InlineStack>
+
+                {/* Campus badges below price */}
+                <InlineStack gap="200">
                   {current.schools.map((s) => (
                     <Badge key={s} tone="info">
                       {s}
@@ -160,10 +175,34 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
 
                 <Divider />
 
-                <BlockStack gap="100">
-                  <Text as="p" tone="subdued">
-                    {`Size ${current.size}`}
-                  </Text>
+                {/* Properties: color swatch + size */}
+                <BlockStack gap="300">
+                  {color && (
+                    <InlineStack gap="400" blockAlign="center">
+                      <div style={{ minWidth: 48 }}>
+                        <Text as="span" tone="subdued">Color</Text>
+                      </div>
+                      <InlineStack gap="200" blockAlign="center">
+                        <div
+                          style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: '50%',
+                            background: color.hex,
+                            border: '1.5px solid rgba(0,0,0,0.14)',
+                            flexShrink: 0,
+                          }}
+                        />
+                        <Text as="span">{color.label}</Text>
+                      </InlineStack>
+                    </InlineStack>
+                  )}
+                  <InlineStack gap="400" blockAlign="center">
+                    <div style={{ minWidth: 48 }}>
+                      <Text as="span" tone="subdued">Size</Text>
+                    </div>
+                    <Text as="span">{current.size}</Text>
+                  </InlineStack>
                   {current.note && (
                     <Text as="p" tone="caution">
                       {current.note}
