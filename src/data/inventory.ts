@@ -11,7 +11,8 @@ export interface Item {
   note?: string;
   unitPrice: number;
   lotPrice: number;
-  status: 'Available' | 'Sold';
+  /** How many of this item are currently available. 0 means sold out. */
+  quantity: number;
   /** Optional photo path (in repo, e.g. images/foo.jpg) or URL. Falls back to an illustration. */
   image?: string;
   /** 1-based line number of this row in inventory.md, for deep-linking to the editor. */
@@ -51,6 +52,14 @@ function splitRow(line: string): string[] {
 const isSeparator = (cells: string[]) =>
   cells.length > 0 && cells.every((c) => /^:?-{1,}:?$/.test(c));
 
+/** Blank quantity defaults to 1; non-numbers and negatives clamp sensibly. */
+function quantityFrom(raw: string): number {
+  const t = raw.trim();
+  if (t === '') return 1;
+  const n = Math.floor(Number(t));
+  return Number.isFinite(n) && n >= 0 ? n : 1;
+}
+
 export function parseInventory(md: string): Item[] {
   const lines = md.split('\n');
   const items: Item[] = [];
@@ -89,7 +98,7 @@ export function parseInventory(md: string): Item[] {
       note: get('condition') || undefined,
       unitPrice: Number(get('unit')) || 0,
       lotPrice: Number(get('lot')) || 0,
-      status: get('status').trim().toLowerCase() === 'sold' ? 'Sold' : 'Available',
+      quantity: quantityFrom(get('qty')),
       image: get('image') || undefined,
       sourceLine: i + 1,
     });

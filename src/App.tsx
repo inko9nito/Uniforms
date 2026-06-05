@@ -52,9 +52,10 @@ interface SectionProps {
 function Section({ title, items, localSold, manageMode, onToggleLocal }: SectionProps) {
   if (items.length === 0) return null;
 
-  const available = items.filter(
-    (i) => i.status !== 'Sold' && !localSold.has(i.id),
-  ).length;
+  const availablePieces = items.reduce(
+    (sum, i) => sum + (localSold.has(i.id) ? 0 : i.quantity),
+    0,
+  );
   const lotPrice = items[0]?.lotPrice ?? 30;
 
   return (
@@ -63,8 +64,8 @@ function Section({ title, items, localSold, manageMode, onToggleLocal }: Section
         <Text variant="headingXl" as="h2">
           {title}
         </Text>
-        <Badge tone={available === 0 ? 'critical' : 'success'}>
-          {`${available} of ${items.length} available`}
+        <Badge tone={availablePieces === 0 ? 'critical' : 'success'}>
+          {`${availablePieces} available`}
         </Badge>
       </InlineStack>
 
@@ -85,7 +86,7 @@ function Section({ title, items, localSold, manageMode, onToggleLocal }: Section
           <ItemCard
             key={item.id}
             item={item}
-            publishedSold={item.status === 'Sold'}
+            publishedSold={item.quantity <= 0}
             localSold={localSold.has(item.id)}
             manageMode={manageMode}
             onToggleLocal={onToggleLocal}
@@ -132,9 +133,10 @@ export default function App() {
     }));
   }, [visibleItems]);
 
-  const totalAvailable = visibleItems.filter(
-    (i) => i.status !== 'Sold' && !localSold.has(i.id),
-  ).length;
+  const totalAvailable = visibleItems.reduce(
+    (sum, i) => sum + (localSold.has(i.id) ? 0 : i.quantity),
+    0,
+  );
 
   return (
     <AppProvider i18n={enTranslations}>
