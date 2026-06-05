@@ -18,7 +18,7 @@ import '@shopify/polaris/build/esm/styles.css';
 import { EDIT_INVENTORY_URL, ITEMS, type Item, type SchoolName } from './data/inventory';
 import { ItemCard } from './components/ItemCard';
 import { EmptyResults } from './components/EmptySchoolState';
-import { ItemDetailModal } from './components/ItemDetailModal';
+import { ItemDetailPanel } from './components/ItemDetailPanel';
 
 const STORAGE_KEY = 'fca-uniform-local-sold-ids';
 const MESSENGER_URL = 'https://m.me/inko9nito';
@@ -82,6 +82,7 @@ function Section({ title, items, localSold, manageMode, onToggleLocal, onOpen }:
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+          gridAutoRows: '1fr',
           gap: '12px',
         }}
       >
@@ -232,9 +233,8 @@ export default function App() {
           </Box>
         </Page>
 
-        <ItemDetailModal
+        <ItemDetailPanel
           item={selectedItem}
-          open={selectedItem !== null}
           onClose={() => setSelectedItem(null)}
           messengerUrl={MESSENGER_URL}
         />
