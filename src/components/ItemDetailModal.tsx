@@ -14,12 +14,12 @@ export function ItemDetailModal({ item, open, onClose, messengerUrl }: Props) {
   const soldOut = item ? item.quantity <= 0 : false;
 
   return (
-    <Modal open={open} onClose={onClose} title={item?.name ?? ''}>
+    <Modal open={open} onClose={onClose} title={item?.displayName ?? ''}>
       {item && (
         <Modal.Section>
           <BlockStack gap="400">
             {item.images.length > 0 ? (
-              <PhotoGallery images={item.images} alt={item.name} />
+              <PhotoGallery images={item.images} alt={item.displayName} />
             ) : (
               <GarmentThumbnail item={item} />
             )}

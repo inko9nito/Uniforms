@@ -6,12 +6,11 @@ import {
   BlockStack,
   Box,
   Button,
-  ButtonGroup,
   Divider,
   InlineStack,
   Link,
   Page,
-  Tabs,
+  Select,
   Text,
 } from '@shopify/polaris';
 import enTranslations from '@shopify/polaris/locales/en.json';
@@ -37,16 +36,17 @@ function saveLocalSold(ids: Set<string>): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]));
 }
 
-const SCHOOL_TABS: { id: string; content: string; school: SchoolName | null }[] = [
-  { id: 'all', content: 'All schools', school: null },
-  { id: 'carrollton', content: 'Carrollton', school: 'Carrollton' },
-  { id: 'frisco', content: 'Frisco', school: 'Frisco' },
+const SCHOOL_OPTIONS: { label: string; value: string; school: SchoolName | null }[] = [
+  { label: 'All campuses', value: 'all', school: null },
+  { label: 'Carrollton', value: 'carrollton', school: 'Carrollton' },
+  { label: 'Frisco', value: 'frisco', school: 'Frisco' },
 ];
 
-const SECTION_FILTERS: { id: string; label: string; section: string | null }[] = [
-  { id: 'all', label: 'All', section: null },
-  { id: 'boys', label: 'Boys', section: 'Boys' },
-  { id: 'girls', label: 'Girls', section: 'Girls' },
+// Order matches the section order on the page (Girls before Boys).
+const SECTION_OPTIONS: { label: string; value: string; section: string | null }[] = [
+  { label: 'All categories', value: 'all', section: null },
+  { label: 'Girls', value: 'girls', section: 'Girls' },
+  { label: 'Boys', value: 'boys', section: 'Boys' },
 ];
 
 interface SectionProps {
@@ -102,7 +102,7 @@ function Section({ title, items, localSold, manageMode, onToggleLocal, onOpen }:
 
 export default function App() {
   const [localSold, setLocalSold] = useState<Set<string>>(loadLocalSold);
-  const [tabIndex, setTabIndex] = useState(0);
+  const [schoolId, setSchoolId] = useState('all');
   const [manageMode, setManageMode] = useState(false);
   const [sectionId, setSectionId] = useState('all');
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
@@ -117,8 +117,8 @@ export default function App() {
     });
   }, []);
 
-  const activeSchool = SCHOOL_TABS[tabIndex]?.school ?? null;
-  const activeSection = SECTION_FILTERS.find((s) => s.id === sectionId)?.section ?? null;
+  const activeSchool = SCHOOL_OPTIONS.find((s) => s.value === schoolId)?.school ?? null;
+  const activeSection = SECTION_OPTIONS.find((s) => s.value === sectionId)?.section ?? null;
 
   const visibleItems = useMemo(
     () =>
@@ -191,19 +191,24 @@ export default function App() {
               </Banner>
             )}
 
-            <Tabs tabs={SCHOOL_TABS} selected={tabIndex} onSelect={setTabIndex} />
-
-            <ButtonGroup variant="segmented">
-              {SECTION_FILTERS.map((s) => (
-                <Button
-                  key={s.id}
-                  pressed={sectionId === s.id}
-                  onClick={() => setSectionId(s.id)}
-                >
-                  {s.label}
-                </Button>
-              ))}
-            </ButtonGroup>
+            <InlineStack gap="300" wrap={false}>
+              <div style={{ flex: 1 }}>
+                <Select
+                  label="Campus"
+                  options={SCHOOL_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+                  value={schoolId}
+                  onChange={setSchoolId}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <Select
+                  label="Category"
+                  options={SECTION_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+                  value={sectionId}
+                  onChange={setSectionId}
+                />
+              </div>
+            </InlineStack>
 
             {sections.length === 0 ? (
               <EmptyResults />
