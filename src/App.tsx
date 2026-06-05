@@ -42,11 +42,12 @@ const SCHOOL_OPTIONS: { label: string; value: string; school: SchoolName | null 
   { label: 'Frisco', value: 'frisco', school: 'Frisco' },
 ];
 
-// Order matches the section order on the page (Girls before Boys).
-const SECTION_OPTIONS: { label: string; value: string; section: string | null }[] = [
-  { label: 'All categories', value: 'all', section: null },
+// Order matches the section order on the page (Girls, Boys, then Unisex).
+const GENDER_OPTIONS: { label: string; value: string; section: string | null }[] = [
+  { label: 'All genders', value: 'all', section: null },
   { label: 'Girls', value: 'girls', section: 'Girls' },
   { label: 'Boys', value: 'boys', section: 'Boys' },
+  { label: 'Unisex', value: 'unisex', section: 'Unisex' },
 ];
 
 interface SectionProps {
@@ -118,7 +119,7 @@ export default function App() {
   }, []);
 
   const activeSchool = SCHOOL_OPTIONS.find((s) => s.value === schoolId)?.school ?? null;
-  const activeSection = SECTION_OPTIONS.find((s) => s.value === sectionId)?.section ?? null;
+  const activeSection = GENDER_OPTIONS.find((s) => s.value === sectionId)?.section ?? null;
 
   const visibleItems = useMemo(
     () =>
@@ -202,8 +203,8 @@ export default function App() {
               </div>
               <div style={{ flex: 1 }}>
                 <Select
-                  label="Category"
-                  options={SECTION_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+                  label="Gender"
+                  options={GENDER_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
                   value={sectionId}
                   onChange={setSectionId}
                 />

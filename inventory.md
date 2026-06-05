@@ -6,6 +6,9 @@ automatically within a couple of minutes.
 
 How to edit:
 
+- **Section** — `Girls`, `Boys`, or `Unisex`. Drives the Gender filter and the page
+  heading. Girls/Boys items are shown with that prefix (e.g. "Girls Navy polo");
+  `Unisex` items (like the Spirit shirt) keep their plain name.
 - **Qty** — how many of this item are available. Lower the number as items sell;
   set it to `0` and the listing shows **Sold out** and grays out. (Blank = 1.)
 - **Schools** — `Carrollton`, `Frisco`, or `Both`. Use `Both` for anything that
@@ -40,5 +43,5 @@ the public listings can only be changed by you.
 | Boys | Gray polo | YM | Carrollton |  | 5 | 1 |  |  |
 | Boys | Gray polo | YM | Carrollton | Marker blemish | 5 | 1 |  |  |
 | Boys | White polo | YM | Carrollton |  | 5 | 1 |  |  |
-| Boys | Spirit shirt | YL | Carrollton |  | 5 | 1 |  |  |
+| Unisex | Spirit shirt | YL | Carrollton |  | 5 | 1 |  |  |
 | Boys | Navy twill pants | 12R | Carrollton |  | 5 | 1 |  |  |
