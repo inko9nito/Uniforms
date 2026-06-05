@@ -6,7 +6,6 @@ interface Props {
   alt: string;
 }
 
-/** Horizontally swipeable photo gallery with scroll-snap and dot indicators. */
 export function PhotoGallery({ images, alt }: Props) {
   const [index, setIndex] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -24,17 +23,18 @@ export function PhotoGallery({ images, alt }: Props) {
   };
 
   return (
-    <div>
+    <div style={{ position: 'relative', height: '100%' }}>
       <div
         ref={trackRef}
         onScroll={handleScroll}
         style={{
           display: 'flex',
+          height: '100%',
           overflowX: 'auto',
           scrollSnapType: 'x mandatory',
-          borderRadius: 8,
           background: '#f6f6f7',
           WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
         }}
       >
         {images.map((src, i) => (
@@ -45,7 +45,7 @@ export function PhotoGallery({ images, alt }: Props) {
             style={{
               flex: '0 0 100%',
               width: '100%',
-              height: 320,
+              height: '100%',
               objectFit: 'contain',
               scrollSnapAlign: 'center',
               display: 'block',
@@ -57,10 +57,14 @@ export function PhotoGallery({ images, alt }: Props) {
       {images.length > 1 && (
         <div
           style={{
+            position: 'absolute',
+            bottom: 12,
+            left: 0,
+            right: 0,
             display: 'flex',
             justifyContent: 'center',
-            gap: 8,
-            marginTop: 10,
+            gap: 6,
+            pointerEvents: 'none',
           }}
         >
           {images.map((_, i) => (
@@ -70,13 +74,14 @@ export function PhotoGallery({ images, alt }: Props) {
               aria-label={`Go to photo ${i + 1}`}
               onClick={() => goTo(i)}
               style={{
-                width: 8,
-                height: 8,
+                width: 6,
+                height: 6,
                 borderRadius: '50%',
                 border: 'none',
                 padding: 0,
                 cursor: 'pointer',
-                background: i === index ? '#303030' : '#c9ced6',
+                pointerEvents: 'auto',
+                background: i === index ? '#fff' : 'rgba(255,255,255,0.5)',
                 transition: 'background 0.2s',
               }}
             />
