@@ -128,14 +128,23 @@ export function removeImageFromInventoryContent(
 
 // Column order in inventory.md:
 // Section(0) Item(1) Size(2) Schools(3) Condition(4) Price(5) Qty(6) Image(7) Link(8)
-const COL = { size: 2, condition: 4, qty: 6, image: 7 } as const;
+export const COL = {
+  section: 0,
+  item: 1,
+  size: 2,
+  schools: 3,
+  condition: 4,
+  price: 5,
+  qty: 6,
+  image: 7,
+  link: 8,
+} as const;
 
-/** Set a single cell (by column index) in a specific row of inventory.md. */
-export function setInventoryCell(
+/** Set one or more cells (by column index) in a specific row of inventory.md. */
+export function setInventoryCells(
   mdContent: string,
   sourceLine: number,
-  colIndex: number,
-  value: string,
+  updates: Record<number, string>,
 ): string {
   const lines = mdContent.split('\n');
   const idx = sourceLine - 1;
@@ -144,10 +153,22 @@ export function setInventoryCell(
 
   const inner = line.trim().replace(/^\|/, '').replace(/\|$/, '');
   const cells = inner.split('|').map((c) => c.trim());
-  cells[colIndex] = value;
+  for (const [col, value] of Object.entries(updates)) {
+    cells[Number(col)] = value;
+  }
 
   lines[idx] = '| ' + cells.join(' | ') + ' |';
   return lines.join('\n');
+}
+
+/** Set a single cell (by column index) in a specific row of inventory.md. */
+export function setInventoryCell(
+  mdContent: string,
+  sourceLine: number,
+  colIndex: number,
+  value: string,
+): string {
+  return setInventoryCells(mdContent, sourceLine, { [colIndex]: value });
 }
 
 export const setInventorySize = (md: string, line: number, size: string) =>

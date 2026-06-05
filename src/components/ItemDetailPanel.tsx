@@ -277,7 +277,12 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
               <Box padding="400" paddingBlockStart="0">
                 <Divider />
                 <Box paddingBlockStart="400">
-                  <ManagePhotosPanel item={current} onPhotosChanged={() => { /* site rebuilds */ }} />
+                  <ManagePhotosPanel
+                    item={current}
+                    onItemPatched={(patch) =>
+                      setCurrent((prev) => (prev ? { ...prev, ...patch } : prev))
+                    }
+                  />
                 </Box>
               </Box>
             )}
