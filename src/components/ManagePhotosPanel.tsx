@@ -71,6 +71,7 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
   const [conditionDraft, setConditionDraft] = useState(item.note ?? '');
   const [priceDraft, setPriceDraft] = useState(String(item.unitPrice));
   const [qtyDraft, setQtyDraft] = useState(String(item.quantity));
+  const [linkDraft, setLinkDraft] = useState(item.sourceUrl ?? '');
   const [images, setImages] = useState<string[]>(item.images);
 
   useEffect(() => {
@@ -81,6 +82,7 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
     setConditionDraft(item.note ?? '');
     setPriceDraft(String(item.unitPrice));
     setQtyDraft(String(item.quantity));
+    setLinkDraft(item.sourceUrl ?? '');
     setImages(item.images);
   }, [item]);
 
@@ -134,6 +136,7 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
       [COL.condition]: condition,
       [COL.price]: String(price),
       [COL.qty]: String(qty),
+      [COL.link]: linkDraft.trim(),
     };
     try {
       setStatus({ type: 'busy', msg: 'Saving details…' });
@@ -246,7 +249,8 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
     sizeDraft.trim() !== item.size ||
     conditionDraft.trim() !== (item.note ?? '') ||
     priceDraft.trim() !== String(item.unitPrice) ||
-    qtyDraft.trim() !== String(item.quantity);
+    qtyDraft.trim() !== String(item.quantity) ||
+    linkDraft.trim() !== (item.sourceUrl ?? '');
 
   return (
     <BlockStack gap="400">
@@ -376,6 +380,16 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
               autoComplete="off"
               disabled={busy}
               placeholder="e.g. Brand new with tags"
+            />
+            <TextField
+              label="Original product URL"
+              type="url"
+              value={linkDraft}
+              onChange={setLinkDraft}
+              autoComplete="off"
+              disabled={busy}
+              placeholder="https://store.example.com/…"
+              helpText="Link to the original store listing (optional)"
             />
             <ChoiceList
               allowMultiple

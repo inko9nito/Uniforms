@@ -137,6 +137,7 @@ export const COL = {
   price: 5,
   qty: 6,
   image: 7,
+  link: 8,
 } as const;
 
 /** Set one or more cells (by column index) in a specific row of inventory.md. */
