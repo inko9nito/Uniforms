@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Badge, BlockStack, Box, Button, InlineStack, Text } from '@shopify/polaris';
+import { Badge, BlockStack, Box, Button, Divider, InlineStack, Text } from '@shopify/polaris';
 import type { Item } from '../data/inventory';
 import { GarmentThumbnail } from './GarmentThumbnail';
 import { PhotoGallery } from './PhotoGallery';
@@ -10,11 +10,6 @@ interface Props {
   messengerUrl: string;
 }
 
-/**
- * Full-screen detail view that slides in from the right (iOS push style).
- * Stays mounted so it can animate both in and out; the last item is kept
- * on screen during the close animation.
- */
 export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
   const open = item !== null;
   const [current, setCurrent] = useState<Item | null>(item);
@@ -24,7 +19,6 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
     if (item) setCurrent(item);
   }, [item]);
 
-  // Lock background scroll while open.
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -45,7 +39,6 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
     if (!s || !t) return;
     const dx = t.clientX - s.x;
     const dy = t.clientY - s.y;
-    // Edge-swipe right = iOS back.
     if (s.x < 28 && dx > 70 && Math.abs(dy) < 50) onClose();
   };
 
@@ -67,113 +60,127 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
         pointerEvents: open ? 'auto' : 'none',
       }}
     >
-      {/* Header */}
-      <div
-        style={{
-          flex: '0 0 auto',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          padding: '8px 8px 8px 4px',
-          borderBottom: '1px solid #e3e5e7',
-          minHeight: 52,
-        }}
-      >
-        <button
-          onClick={onClose}
-          aria-label="Go back"
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 8,
-            color: '#303030',
-            flexShrink: 0,
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-            <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <span
-          style={{
-            fontWeight: 650,
-            fontSize: 16,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {current?.displayName}
-        </span>
-      </div>
-
-      {/* Scrollable content */}
+      {/* Scrollable content — no header bar; back button floats over image */}
       <div
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}
       >
         {current && (
-          <Box padding="400">
-            <BlockStack gap="400">
+          <>
+            {/* Full-bleed image area */}
+            <div
+              style={{
+                position: 'relative',
+                height: 'min(48vh, 400px)',
+                minHeight: 260,
+                background: '#f6f6f7',
+                flexShrink: 0,
+              }}
+            >
               {current.images.length > 0 ? (
                 <PhotoGallery images={current.images} alt={current.displayName} />
               ) : (
-                <div style={{ height: 320, borderRadius: 8, overflow: 'hidden' }}>
-                  <GarmentThumbnail item={current} />
-                </div>
+                <GarmentThumbnail item={current} />
               )}
 
-              <InlineStack gap="200" blockAlign="center">
-                {soldOut ? (
-                  <Badge tone="critical">Sold out</Badge>
-                ) : (
-                  <Badge tone="success">{`${current.quantity} available`}</Badge>
-                )}
-                {current.schools.map((s) => (
-                  <Badge key={s} tone="info">
-                    {s}
-                  </Badge>
-                ))}
-              </InlineStack>
+              {/* Floating back button overlaid on image */}
+              <button
+                onClick={onClose}
+                aria-label="Go back"
+                style={{
+                  position: 'absolute',
+                  top: 12,
+                  left: 12,
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.92)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 1px 6px rgba(0,0,0,0.18)',
+                  backdropFilter: 'blur(4px)',
+                  zIndex: 1,
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
+                  <path
+                    d="M12 4L6 10L12 16"
+                    stroke="#303030"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
 
-              <Text variant="headingLg" as="p">
-                {`$${current.unitPrice}`}
-              </Text>
-
-              <BlockStack gap="100">
-                <Text as="p" tone="subdued">
-                  {`Size ${current.size}`}
+            {/* Product info */}
+            <Box padding="400">
+              <BlockStack gap="300">
+                <Text variant="headingXl" as="h1">
+                  {current.displayName}
                 </Text>
-                {current.note && (
-                  <Text as="p" tone="caution">
-                    {current.note}
-                  </Text>
-                )}
-              </BlockStack>
 
-              {current.sourceUrl && (
-                <Box>
+                <Text variant="heading2xl" as="p">
+                  {`$${current.unitPrice}`}
+                </Text>
+
+                <InlineStack gap="200" blockAlign="center">
+                  {soldOut ? (
+                    <Badge tone="critical">Sold out</Badge>
+                  ) : (
+                    <Badge tone="success">{`${current.quantity} available`}</Badge>
+                  )}
+                  {current.schools.map((s) => (
+                    <Badge key={s} tone="info">
+                      {s}
+                    </Badge>
+                  ))}
+                </InlineStack>
+
+                <Divider />
+
+                <BlockStack gap="100">
+                  <Text as="p" tone="subdued">
+                    {`Size ${current.size}`}
+                  </Text>
+                  {current.note && (
+                    <Text as="p" tone="caution">
+                      {current.note}
+                    </Text>
+                  )}
+                </BlockStack>
+
+                {current.sourceUrl && (
                   <Button url={current.sourceUrl} target="_blank" variant="plain">
                     View original listing in the store →
                   </Button>
-                </Box>
-              )}
-
-              <Box paddingBlockStart="200">
-                <Button url={messengerUrl} target="_blank" variant="primary" fullWidth>
-                  Message me on Facebook to buy
-                </Button>
-              </Box>
-            </BlockStack>
-          </Box>
+                )}
+              </BlockStack>
+            </Box>
+          </>
         )}
       </div>
+
+      {/* Sticky CTA pinned to bottom */}
+      {current && (
+        <div
+          style={{
+            flex: '0 0 auto',
+            padding: '12px 16px 20px',
+            borderTop: '1px solid #e3e5e7',
+            background: '#fff',
+          }}
+        >
+          <Button url={messengerUrl} target="_blank" variant="primary" fullWidth size="large">
+            Message me on Facebook to buy
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
