@@ -3,29 +3,30 @@ import {
   Banner,
   BlockStack,
   Button,
+  ChoiceList,
   Divider,
   FormLayout,
   InlineStack,
   Link,
+  Select,
   Spinner,
   Text,
   TextField,
   Thumbnail,
 } from '@shopify/polaris';
 import { ArrowDownIcon, ArrowUpIcon, DeleteIcon } from '@shopify/polaris-icons';
-import type { Item } from '../data/inventory';
+import type { Item, SchoolName } from '../data/inventory';
 import { resolveImage } from '../data/inventory';
 import {
   addImageToInventoryContent,
+  COL,
   fileToBase64,
   getFile,
   loadToken,
   putFile,
   saveToken,
-  setInventoryCondition,
+  setInventoryCells,
   setInventoryImages,
-  setInventoryQuantity,
-  setInventorySize,
   slugify,
 } from '../data/github';
 
@@ -40,6 +41,20 @@ type Status =
   | { type: 'error'; msg: string }
   | { type: 'done' };
 
+const GENDER_OPTIONS = ['Girls', 'Boys', 'Unisex'];
+const CAMPUS_CHOICES: { label: SchoolName; value: SchoolName }[] = [
+  { label: 'Carrollton', value: 'Carrollton' },
+  { label: 'Frisco', value: 'Frisco' },
+];
+
+/** Serialize the selected campuses back to the inventory.md Schools cell. */
+function formatSchools(selected: string[]): string {
+  const both = selected.includes('Carrollton') && selected.includes('Frisco');
+  if (both) return 'Both';
+  if (selected.length > 0) return selected.join(', ');
+  return 'Carrollton';
+}
+
 export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
   const [token, setToken] = useState(loadToken);
   const [tokenDraft, setTokenDraft] = useState('');
@@ -48,20 +63,35 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
   const [status, setStatus] = useState<Status>({ type: 'idle' });
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Editable drafts, seeded from the item and re-seeded when a different item opens.
+  const [titleDraft, setTitleDraft] = useState(item.name);
+  const [genderDraft, setGenderDraft] = useState(item.section);
+  const [campusDraft, setCampusDraft] = useState<string[]>(item.schools);
   const [sizeDraft, setSizeDraft] = useState(item.size);
   const [conditionDraft, setConditionDraft] = useState(item.note ?? '');
+  const [priceDraft, setPriceDraft] = useState(String(item.unitPrice));
   const [qtyDraft, setQtyDraft] = useState(String(item.quantity));
   const [images, setImages] = useState<string[]>(item.images);
 
   useEffect(() => {
+    setTitleDraft(item.name);
+    setGenderDraft(item.section);
+    setCampusDraft(item.schools);
     setSizeDraft(item.size);
     setConditionDraft(item.note ?? '');
+    setPriceDraft(String(item.unitPrice));
     setQtyDraft(String(item.quantity));
     setImages(item.images);
   }, [item]);
 
   const hasToken = token.length > 0;
   const busy = status.type === 'busy';
+
+  // Gender options always include the item's current section, even if it's
+  // something custom (e.g. "Other") that isn't in the standard list.
+  const genderOptions = GENDER_OPTIONS.includes(item.section)
+    ? GENDER_OPTIONS
+    : [item.section, ...GENDER_OPTIONS];
 
   function handleSaveToken() {
     const t = tokenDraft.trim();
@@ -71,6 +101,7 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
     setShowTokenInput(false);
   }
 
+  /** Fetch inventory.md, apply a transform, and commit it back. */
   async function patchInventory(transform: (content: string) => string, message: string) {
     const { content, sha } = await getFile(token, 'inventory.md');
     const updated = transform(content);
@@ -78,27 +109,37 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
   }
 
   async function handleSaveDetails() {
+    const title = titleDraft.trim();
     const size = sizeDraft.trim();
     const condition = conditionDraft.trim();
+    const price = Math.max(0, Number(priceDraft));
     const qty = Math.max(0, Math.floor(Number(qtyDraft)));
+    if (!title) {
+      setStatus({ type: 'error', msg: 'Title cannot be empty' });
+      return;
+    }
+    if (!Number.isFinite(price)) {
+      setStatus({ type: 'error', msg: 'Price must be a number' });
+      return;
+    }
     if (!Number.isFinite(qty)) {
       setStatus({ type: 'error', msg: 'Quantity must be a number' });
       return;
     }
+    const updates: Record<number, string> = {
+      [COL.item]: title,
+      [COL.section]: genderDraft,
+      [COL.schools]: formatSchools(campusDraft),
+      [COL.size]: size,
+      [COL.condition]: condition,
+      [COL.price]: String(price),
+      [COL.qty]: String(qty),
+    };
     try {
       setStatus({ type: 'busy', msg: 'Saving details…' });
       await patchInventory(
-        (content) =>
-          setInventoryQuantity(
-            setInventoryCondition(
-              setInventorySize(content, item.sourceLine, size),
-              item.sourceLine,
-              condition,
-            ),
-            item.sourceLine,
-            qty,
-          ),
-        `Update ${item.displayName}: details`,
+        (content) => setInventoryCells(content, item.sourceLine, updates),
+        `Update ${title}: details`,
       );
       setStatus({ type: 'done' });
       onPhotosChanged();
@@ -164,6 +205,7 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
     }
   }
 
+  /** Commit a new ordered image list (used for both remove and reorder). */
   async function commitImageOrder(next: string[], message: string) {
     const prev = images;
     setImages(next);
@@ -198,8 +240,12 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
   }
 
   const detailsDirty =
+    titleDraft.trim() !== item.name ||
+    genderDraft !== item.section ||
+    formatSchools(campusDraft) !== formatSchools(item.schools) ||
     sizeDraft.trim() !== item.size ||
     conditionDraft.trim() !== (item.note ?? '') ||
+    priceDraft.trim() !== String(item.unitPrice) ||
     qtyDraft.trim() !== String(item.quantity);
 
   return (
@@ -275,15 +321,41 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
         </InlineStack>
       )}
 
-      {/* Details: size, condition, quantity */}
+      {/* Details: title, gender, campus, size, condition, price, qty */}
       {hasToken && (
         <BlockStack gap="300">
           <FormLayout>
+            <TextField
+              label="Title"
+              value={titleDraft}
+              onChange={setTitleDraft}
+              autoComplete="off"
+              disabled={busy}
+            />
             <FormLayout.Group>
+              <Select
+                label="Gender"
+                options={genderOptions}
+                value={genderDraft}
+                onChange={setGenderDraft}
+                disabled={busy}
+              />
               <TextField
                 label="Size"
                 value={sizeDraft}
                 onChange={setSizeDraft}
+                autoComplete="off"
+                disabled={busy}
+              />
+            </FormLayout.Group>
+            <FormLayout.Group>
+              <TextField
+                label="Price"
+                type="number"
+                min={0}
+                prefix="$"
+                value={priceDraft}
+                onChange={setPriceDraft}
                 autoComplete="off"
                 disabled={busy}
               />
@@ -304,6 +376,14 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
               autoComplete="off"
               disabled={busy}
               placeholder="e.g. Brand new with tags"
+            />
+            <ChoiceList
+              allowMultiple
+              title="Campus"
+              choices={CAMPUS_CHOICES}
+              selected={campusDraft}
+              onChange={setCampusDraft}
+              disabled={busy}
             />
           </FormLayout>
           <InlineStack>
