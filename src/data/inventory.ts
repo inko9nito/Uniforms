@@ -12,10 +12,18 @@ export interface Item {
   unitPrice: number;
   /** How many of this item are currently available. 0 means sold out. */
   quantity: number;
-  /** Optional photo path (in repo, e.g. images/foo.jpg) or URL. Falls back to an illustration. */
-  image?: string;
+  /** Photo paths (in repo, e.g. images/foo.jpg) or URLs. Empty falls back to an illustration. */
+  images: string[];
+  /** Optional link to the original store listing where the item was bought. */
+  sourceUrl?: string;
   /** 1-based line number of this row in inventory.md, for deep-linking to the editor. */
   sourceLine: number;
+}
+
+/** Absolute URLs pass through; repo-relative paths resolve against the site base. */
+export function resolveImage(src: string): string {
+  if (/^https?:\/\//.test(src)) return src;
+  return import.meta.env.BASE_URL + src.replace(/^\/+/, '');
 }
 
 /** GitHub repo coordinates, used to build "edit on GitHub" links. */
@@ -97,7 +105,11 @@ export function parseInventory(md: string): Item[] {
       note: get('condition') || undefined,
       unitPrice: Number(get('price')) || 0,
       quantity: quantityFrom(get('qty')),
-      image: get('image') || undefined,
+      images: get('image')
+        .split(/[;,]/)
+        .map((s) => s.trim())
+        .filter(Boolean),
+      sourceUrl: get('link').trim() || undefined,
       sourceLine: i + 1,
     });
     idx++;
