@@ -28,6 +28,19 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
   const start = useRef<{ x: number; y: number } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // On desktop the panel is a right-anchored drawer with a backdrop; on
+  // mobile it stays a full-screen slide-over.
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
   useEffect(() => {
     if (item) setCurrent(item);
   }, [item]);
@@ -73,54 +86,88 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
   const color = current ? colorFor(current.name) : null;
 
   return (
-    <div
-      ref={panelRef}
-      aria-hidden={!open}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 520,
-        background: '#fff',
-        display: 'flex',
-        flexDirection: 'column',
-        transform: open ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.32s cubic-bezier(0.32, 0.72, 0, 1)',
-        boxShadow: open ? '-8px 0 24px rgba(0,0,0,0.12)' : 'none',
-        pointerEvents: open ? 'auto' : 'none',
-      }}
-    >
-      {/* Back button fixed to the panel so it doesn't scroll away */}
-      <button
+    <>
+      {/* Backdrop — desktop drawer only; click to dismiss */}
+      <div
         onClick={onClose}
-        aria-label="Go back"
+        aria-hidden
         style={{
-          position: 'absolute',
-          top: 12,
-          left: 12,
-          width: 36,
-          height: 36,
-          borderRadius: '50%',
-          background: 'rgba(255,255,255,0.92)',
-          border: 'none',
-          cursor: 'pointer',
+          position: 'fixed',
+          inset: 0,
+          zIndex: 519,
+          background: 'rgba(0,0,0,0.4)',
+          opacity: open ? 1 : 0,
+          transition: 'opacity 0.32s ease',
+          pointerEvents: open ? 'auto' : 'none',
+          display: isDesktop ? 'block' : 'none',
+        }}
+      />
+
+      <div
+        ref={panelRef}
+        aria-hidden={!open}
+        style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: isDesktop ? 'auto' : 0,
+          width: isDesktop ? 'min(480px, 100vw)' : 'auto',
+          zIndex: 520,
+          background: '#fff',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 1px 6px rgba(0,0,0,0.18)',
-          backdropFilter: 'blur(4px)',
-          zIndex: 2,
+          flexDirection: 'column',
+          transform: open ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 0.32s cubic-bezier(0.32, 0.72, 0, 1)',
+          boxShadow: open ? '-8px 0 24px rgba(0,0,0,0.12)' : 'none',
+          pointerEvents: open ? 'auto' : 'none',
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
-          <path
-            d="M12 4L6 10L12 16"
-            stroke="#303030"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
+        {/* Close button fixed to the panel so it doesn't scroll away.
+            Chevron (back) on mobile, X (close) on desktop. */}
+        <button
+          onClick={onClose}
+          aria-label={isDesktop ? 'Close' : 'Go back'}
+          style={{
+            position: 'absolute',
+            top: 12,
+            left: 12,
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.92)',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 1px 6px rgba(0,0,0,0.18)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 2,
+          }}
+        >
+          {isDesktop ? (
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
+              <path
+                d="M5 5L15 15M15 5L5 15"
+                stroke="#303030"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
+              <path
+                d="M12 4L6 10L12 16"
+                stroke="#303030"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </button>
 
       {/* Scrollable content */}
       <div
@@ -238,21 +285,22 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
         )}
       </div>
 
-      {/* Sticky CTA pinned to bottom */}
-      {current && (
-        <div
-          style={{
-            flex: '0 0 auto',
-            padding: '12px 16px 20px',
-            borderTop: '1px solid #e3e5e7',
-            background: '#fff',
-          }}
-        >
-          <Button url={messengerUrl} target="_blank" variant="primary" fullWidth size="large">
-            Message me on Facebook to buy
-          </Button>
-        </div>
-      )}
-    </div>
+        {/* Sticky CTA pinned to bottom */}
+        {current && (
+          <div
+            style={{
+              flex: '0 0 auto',
+              padding: '12px 16px 20px',
+              borderTop: '1px solid #e3e5e7',
+              background: '#fff',
+            }}
+          >
+            <Button url={messengerUrl} target="_blank" variant="primary" fullWidth size="large">
+              Message me on Facebook to buy
+            </Button>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

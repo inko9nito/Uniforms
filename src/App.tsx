@@ -150,7 +150,7 @@ export default function App() {
           title="FCA Uniform Resale"
           subtitle="Location: The Shops at Legacy, Plano"
         >
-          <Box paddingInline={{ xs: '400', sm: '500' }} paddingBlockStart="200">
+          <Box paddingBlockStart="200">
           <BlockStack gap="600">
             <Banner tone="info">
               <Text as="p">
