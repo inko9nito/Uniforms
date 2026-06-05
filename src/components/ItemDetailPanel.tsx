@@ -14,6 +14,7 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
   const open = item !== null;
   const [current, setCurrent] = useState<Item | null>(item);
   const start = useRef<{ x: number; y: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (item) setCurrent(item);
@@ -26,6 +27,20 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
     return () => {
       document.body.style.overflow = prev;
     };
+  }, [open]);
+
+  // Non-passive listener so we can preventDefault on left-edge touches,
+  // which stops Safari from stealing the gesture as a history.back() navigation.
+  useEffect(() => {
+    if (!open) return;
+    const el = panelRef.current;
+    if (!el) return;
+    const block = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (t && t.clientX < 28) e.preventDefault();
+    };
+    el.addEventListener('touchstart', block, { passive: false });
+    return () => el.removeEventListener('touchstart', block);
   }, [open]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -46,6 +61,7 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
 
   return (
     <div
+      ref={panelRef}
       aria-hidden={!open}
       style={{
         position: 'fixed',
