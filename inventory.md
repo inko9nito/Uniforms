@@ -33,15 +33,15 @@ the public listings can only be changed by you.
 
 | Section | Item | Size | Schools | Condition | Price | Qty | Image | Link |
 |---------|------|------|---------|-----------|-------|-----|-------|------|
-| Girls | Navy polo | YS | Carrollton |  | 5 | 2 | images/example-navy-polo-1.svg, images/example-navy-polo-2.svg | https://www.example.com/founders-navy-polo |
-| Girls | Gray polo | YS | Carrollton |  | 5 | 2 |  |  |
-| Girls | White polo | YS | Carrollton | Small marker blemish | 5 | 1 |  |  |
+| Girls | Navy polo | YS | Carrollton |  | 5 | 2 | images/polo-girls-navy.jpg |  |
+| Girls | Gray polo | YS | Carrollton |  | 5 | 2 | images/polo-girls-gray.jpg |  |
+| Girls | White polo | YS | Carrollton | Small marker blemish | 5 | 1 | images/polo-girls-white.jpg |  |
 | Girls | Pleat skort | 8R | Carrollton |  | 5 | 1 |  |  |
 | Girls | Twill walking shorts | 8R | Carrollton | Brand new with tags | 5 | 1 | images/example-walking-shorts.svg | https://www.example.com/twill-walking-shorts |
 | Boys | Navy polo | YM | Carrollton |  | 5 | 1 |  |  |
-| Boys | Navy polo (performance) | YM | Carrollton |  | 5 | 2 |  |  |
-| Boys | Gray polo | YM | Carrollton |  | 5 | 1 |  |  |
-| Boys | Gray polo | YM | Carrollton | Marker blemish | 5 | 1 |  |  |
+| Boys | Navy polo (performance) | YM | Carrollton |  | 5 | 2 | images/polo-boys-navy-performance.jpg |  |
+| Boys | Gray polo | YM | Carrollton |  | 5 | 1 | images/polo-boys-gray.jpg |  |
+| Boys | Gray polo | YM | Carrollton | Marker blemish | 5 | 1 | images/polo-boys-gray.jpg |  |
 | Boys | White polo | YM | Carrollton |  | 5 | 1 |  |  |
 | Unisex | Spirit shirt | YL | Carrollton |  | 5 | 1 |  |  |
 | Unisex | Navy 1/4-Zip Performance Fleece Pullover | YL | Both |  | 5 | 1 | https://cdn11.bigcommerce.com/s-jjm7kgkrrc/images/stencil/320w/attribute_rule_images/1154203_source_1778859607.jpg |  |

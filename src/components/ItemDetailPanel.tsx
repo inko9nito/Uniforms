@@ -203,11 +203,16 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
                     </div>
                     <Text as="span">{current.size}</Text>
                   </InlineStack>
-                  {current.note && (
-                    <Text as="p" tone="caution">
-                      {current.note}
-                    </Text>
-                  )}
+                  <InlineStack gap="400" blockAlign="center">
+                    <div style={{ minWidth: 48 }}>
+                      <Text as="span" tone="subdued">Condition</Text>
+                    </div>
+                    {current.note ? (
+                      <Text as="span" tone="caution">{current.note}</Text>
+                    ) : (
+                      <Text as="span">Good</Text>
+                    )}
+                  </InlineStack>
                 </BlockStack>
 
                 {current.sourceUrl && (
