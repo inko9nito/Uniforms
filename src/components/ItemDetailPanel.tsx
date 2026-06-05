@@ -126,7 +126,7 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
       <div
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}
+        style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingTop: 60 }}
       >
         {current && (
           <>

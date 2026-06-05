@@ -149,21 +149,10 @@ export default function App() {
         <Page
           title="FCA Uniform Resale"
           subtitle="Location: The Shops at Legacy, Plano"
-          primaryAction={{
-            content: 'Message me on Facebook',
-            url: MESSENGER_URL,
-            external: true,
-          }}
-          secondaryActions={[
-            {
-              content: manageMode ? 'Done managing' : 'Manage inventory',
-              onAction: () => setManageMode((m) => !m),
-            },
-          ]}
         >
           <Box paddingInline={{ xs: '400', sm: '500' }} paddingBlockStart="200">
           <BlockStack gap="600">
-            <Banner tone="success">
+            <Banner tone="info">
               <Text as="p">
                 Everything below is available unless marked <strong>Sold</strong>. To buy
                 something,{' '}
@@ -240,6 +229,31 @@ export default function App() {
           manageMode={manageMode}
         />
       </Box>
+
+      {/* Floating manage mode toggle — visible over the detail panel */}
+      <button
+        onClick={() => setManageMode((m) => !m)}
+        style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          zIndex: 530,
+          height: 44,
+          padding: '0 20px',
+          borderRadius: 22,
+          background: manageMode ? '#303030' : '#ffffff',
+          color: manageMode ? '#ffffff' : '#303030',
+          border: '1.5px solid',
+          borderColor: manageMode ? '#303030' : '#c9cccf',
+          fontSize: 14,
+          fontWeight: 600,
+          cursor: 'pointer',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {manageMode ? 'Done editing' : 'Edit'}
+      </button>
     </AppProvider>
   );
 }
