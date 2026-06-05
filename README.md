@@ -40,7 +40,7 @@ GitHub editor for the matching row.
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173/Uniforms/
+npm run dev      # http://localhost:5173/
 npm run build    # type-check + production build into dist/
 ```
 

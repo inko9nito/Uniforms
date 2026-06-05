@@ -5,42 +5,35 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Needs write access to push the built site to the gh-pages branch.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# Only one Pages deploy at a time; newer pushes cancel in-flight ones.
+# Don't let two production deploys race each other.
 concurrency:
-  group: pages
+  group: pages-production
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Turns on GitHub Pages automatically on the first run, so there's
-      # no need to toggle it by hand in repo settings.
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
       - run: npm ci
       - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      # Publish the production build to the ROOT of the gh-pages branch.
+      # clean: true removes stale production files, but clean-exclude keeps
+      # the pr-preview/ directory so open PR previews survive a deploy.
+      - name: Deploy to gh-pages root
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages
+          clean: true
+          clean-exclude: |
+            pr-preview/

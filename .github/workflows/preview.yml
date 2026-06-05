@@ -1,0 +1,43 @@
+name: PR Preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+# contents: write to publish into the gh-pages branch;
+# pull-requests: write so the action can comment the preview URL.
+permissions:
+  contents: write
+  pull-requests: write
+
+# One preview deploy per PR at a time.
+concurrency:
+  group: pr-preview-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Skip the build on "closed" events — the action just tears the
+      # preview down in that case.
+      - uses: actions/setup-node@v4
+        if: github.event.action != 'closed'
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+        if: github.event.action != 'closed'
+      - run: npm run build
+        if: github.event.action != 'closed'
+
+      # Deploys dist/ to gh-pages at pr-preview/pr-<N>/, comments the URL on
+      # the PR, and removes the preview folder when the PR is closed.
+      - name: Deploy preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: dist
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
