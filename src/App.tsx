@@ -21,7 +21,7 @@ import { EmptyResults } from './components/EmptySchoolState';
 import { ItemDetailPanel } from './components/ItemDetailPanel';
 
 const STORAGE_KEY = 'fca-uniform-local-sold-ids';
-const MESSENGER_URL = 'https://m.me/inko9nito';
+const MESSENGER_URL = 'https://m.me/inko9nito?hash=AbZ0fXAb8rAGhWaG&source_id=8585216';
 
 function loadLocalSold(): Set<string> {
   try {
