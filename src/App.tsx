@@ -8,6 +8,7 @@ import {
   Button,
   Divider,
   InlineStack,
+  Link,
   Page,
   Tabs,
   Text,
@@ -16,8 +17,10 @@ import enTranslations from '@shopify/polaris/locales/en.json';
 import '@shopify/polaris/build/esm/styles.css';
 import { EDIT_INVENTORY_URL, ITEMS, type Item, type SchoolName } from './data/inventory';
 import { ItemCard } from './components/ItemCard';
+import { EmptySchoolState } from './components/EmptySchoolState';
 
 const STORAGE_KEY = 'fca-uniform-local-sold-ids';
+const MESSENGER_URL = 'https://m.me/inko9nito';
 
 function loadLocalSold(): Set<string> {
   try {
@@ -139,6 +142,11 @@ export default function App() {
         <Page
           title="FCA Carrollton Uniform Resale"
           subtitle={`The Shops at Legacy, Plano · Founders Classical Academy · ${totalAvailable} items available`}
+          primaryAction={{
+            content: 'Message me on Facebook',
+            url: MESSENGER_URL,
+            external: true,
+          }}
           secondaryActions={[
             {
               content: manageMode ? 'Done managing' : 'Manage inventory',
@@ -147,6 +155,17 @@ export default function App() {
           ]}
         >
           <BlockStack gap="600">
+            <Banner tone="success">
+              <Text as="p">
+                Everything below is available unless marked <strong>Sold</strong>. To buy
+                something,{' '}
+                <Link url={MESSENGER_URL} external>
+                  message me on Facebook
+                </Link>
+                .
+              </Text>
+            </Banner>
+
             {manageMode && (
               <Banner tone="warning" title="Manage mode">
                 <BlockStack gap="200">
@@ -168,18 +187,22 @@ export default function App() {
 
             <Tabs tabs={SCHOOL_TABS} selected={tabIndex} onSelect={setTabIndex} />
 
-            {sections.map((section, i) => (
-              <BlockStack key={section.name} gap="600">
-                {i > 0 && <Divider />}
-                <Section
-                  title={section.name}
-                  items={section.items}
-                  localSold={localSold}
-                  manageMode={manageMode}
-                  onToggleLocal={handleToggleLocal}
-                />
-              </BlockStack>
-            ))}
+            {sections.length === 0 ? (
+              <EmptySchoolState school={activeSchool ?? 'this school'} />
+            ) : (
+              sections.map((section, i) => (
+                <BlockStack key={section.name} gap="600">
+                  {i > 0 && <Divider />}
+                  <Section
+                    title={section.name}
+                    items={section.items}
+                    localSold={localSold}
+                    manageMode={manageMode}
+                    onToggleLocal={handleToggleLocal}
+                  />
+                </BlockStack>
+              ))
+            )}
           </BlockStack>
         </Page>
       </Box>

@@ -12,6 +12,8 @@ export interface Item {
   unitPrice: number;
   lotPrice: number;
   status: 'Available' | 'Sold';
+  /** Optional photo path (in repo, e.g. images/foo.jpg) or URL. Falls back to an illustration. */
+  image?: string;
   /** 1-based line number of this row in inventory.md, for deep-linking to the editor. */
   sourceLine: number;
 }
@@ -88,6 +90,7 @@ export function parseInventory(md: string): Item[] {
       unitPrice: Number(get('unit')) || 0,
       lotPrice: Number(get('lot')) || 0,
       status: get('status').trim().toLowerCase() === 'sold' ? 'Sold' : 'Available',
+      image: get('image') || undefined,
       sourceLine: i + 1,
     });
     idx++;
