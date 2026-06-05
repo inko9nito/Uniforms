@@ -3,11 +3,13 @@ import { Badge, BlockStack, Box, Button, Divider, InlineStack, Text } from '@sho
 import type { Item } from '../data/inventory';
 import { GarmentThumbnail } from './GarmentThumbnail';
 import { PhotoGallery } from './PhotoGallery';
+import { ManagePhotosPanel } from './ManagePhotosPanel';
 
 interface Props {
   item: Item | null;
   onClose: () => void;
   messengerUrl: string;
+  manageMode: boolean;
 }
 
 function colorFor(name: string): { hex: string; label: string } | null {
@@ -20,7 +22,7 @@ function colorFor(name: string): { hex: string; label: string } | null {
   return null;
 }
 
-export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
+export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Props) {
   const open = item !== null;
   const [current, setCurrent] = useState<Item | null>(item);
   const start = useRef<{ x: number; y: number } | null>(null);
@@ -223,6 +225,15 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
                 )}
               </BlockStack>
             </Box>
+
+            {manageMode && (
+              <Box padding="400" paddingBlockStart="0">
+                <Divider />
+                <Box paddingBlockStart="400">
+                  <ManagePhotosPanel item={current} onPhotosChanged={() => { /* site rebuilds */ }} />
+                </Box>
+              </Box>
+            )}
           </>
         )}
       </div>

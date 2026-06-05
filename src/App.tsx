@@ -237,6 +237,7 @@ export default function App() {
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
           messengerUrl={MESSENGER_URL}
+          manageMode={manageMode}
         />
       </Box>
     </AppProvider>
