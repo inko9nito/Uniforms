@@ -1,6 +1,27 @@
-import inventoryMd from '../../inventory.md?raw';
+import generated from './inventory.generated.json';
 
 export type SchoolName = 'Carrollton' | 'Frisco';
+
+/** Polaris Badge tones we use for the availability badge. */
+export type BadgeTone = 'success' | 'attention' | 'subdued';
+
+export interface AvailabilityBadge {
+  label: string;
+  tone: BadgeTone;
+}
+
+/** One physical garment belonging to a product listing. */
+export interface Instance {
+  /** e.g. "Gray polo #2". */
+  label: string;
+  /** e.g. "Good", "Has blemish", "New with tags". */
+  condition: string;
+  /** Free-text detail about a flaw, e.g. "Small marker blemish". */
+  conditionNotes?: string;
+  status: 'Available' | 'Reserved' | 'Sold' | string;
+  /** Per-item price; null only if Airtable left it blank. */
+  price: number | null;
+}
 
 export interface Item {
   id: string;
@@ -10,16 +31,47 @@ export interface Item {
   displayName: string;
   size: string;
   schools: SchoolName[];
+  /** Short condition summary for the card (distinct conditions across instances). */
   note?: string;
+  /** Lowest available instance price. Kept as `unitPrice` for back-compat. */
   unitPrice: number;
-  /** How many of this item are currently available. 0 means sold out. */
+  priceMin: number;
+  priceMax: number;
+  /** Airtable's pre-formatted range string, e.g. "$3–$5". */
+  priceDisplay?: string;
+  /** Count of buyable instances. 0 means none available right now. Aliased as `quantity`. */
   quantity: number;
+  availableCount: number;
+  reservedCount: number;
+  /** Mirrors Airtable's availability formula (available wins over reserved). */
+  badge: AvailabilityBadge;
   /** Photo paths (in repo, e.g. images/foo.jpg) or URLs. Empty falls back to an illustration. */
   images: string[];
   /** Optional link to the original store listing where the item was bought. */
   sourceUrl?: string;
-  /** 1-based line number of this row in inventory.md, for deep-linking to the editor. */
+  /** Retained for the (now dormant) GitHub editor; 0 since data comes from Airtable. */
   sourceLine: number;
+  /** Per-garment breakdown, sorted available → reserved → sold. */
+  instances: Instance[];
+}
+
+/** Shape of each entry in inventory.generated.json (produced by scripts/fetch-airtable.mjs). */
+interface GeneratedProduct {
+  id: string;
+  section: string;
+  name: string;
+  size: string;
+  schools: SchoolName[];
+  note?: string;
+  priceMin: number;
+  priceMax: number;
+  priceDisplay?: string;
+  availableCount: number;
+  reservedCount: number;
+  badge: AvailabilityBadge;
+  images: string[];
+  sourceUrl?: string;
+  instances: Instance[];
 }
 
 /** Absolute URLs pass through; repo-relative paths resolve against the site base. */
@@ -40,93 +92,40 @@ export function editLineUrl(line: number): string {
   return `${EDIT_INVENTORY_URL}#L${line}`;
 }
 
-function parseSchools(raw: string): SchoolName[] {
-  const value = raw.trim().toLowerCase();
-  if (value === 'both') return ['Carrollton', 'Frisco'];
-  const out: SchoolName[] = [];
-  for (const part of raw.split(/[,/&]| and /i)) {
-    const t = part.trim().toLowerCase();
-    if (t.startsWith('carr') && !out.includes('Carrollton')) out.push('Carrollton');
-    else if (t.startsWith('fri') && !out.includes('Frisco')) out.push('Frisco');
-  }
-  return out.length ? out : ['Carrollton'];
-}
-
-function splitRow(line: string): string[] {
-  const trimmed = line.trim();
-  const inner = trimmed.replace(/^\|/, '').replace(/\|$/, '');
-  return inner.split('|').map((c) => c.trim());
-}
-
-const isSeparator = (cells: string[]) =>
-  cells.length > 0 && cells.every((c) => /^:?-{1,}:?$/.test(c));
-
-/** Blank quantity defaults to 1; non-numbers and negatives clamp sensibly. */
-function quantityFrom(raw: string): number {
-  const t = raw.trim();
-  if (t === '') return 1;
-  const n = Math.floor(Number(t));
-  return Number.isFinite(n) && n >= 0 ? n : 1;
-}
-
 /** Girls/Boys items get a section prefix; Unisex (and anything else) keep their plain name. */
 function displayNameFor(section: string, name: string): string {
   if (section === 'Girls' || section === 'Boys') return `${section} ${name}`;
   return name;
 }
 
-export function parseInventory(md: string): Item[] {
-  const lines = md.split('\n');
-  const items: Item[] = [];
-  let headers: string[] | null = null;
-  let idx = 0;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line.trim().startsWith('|')) {
-      headers = null; // a blank/non-table line ends the current table
-      continue;
-    }
-
-    const cells = splitRow(line);
-    if (isSeparator(cells)) continue;
-
-    if (!headers) {
-      headers = cells.map((c) => c.toLowerCase());
-      continue;
-    }
-
-    const get = (needle: string) => {
-      const k = headers!.findIndex((h) => h.includes(needle));
-      return k >= 0 ? cells[k] ?? '' : '';
-    };
-
-    const name = get('item');
-    if (!name) continue;
-
-    const section = get('section') || 'Other';
-
-    items.push({
-      id: `item-${idx}`,
-      section,
-      name,
-      displayName: displayNameFor(section, name),
-      size: get('size'),
-      schools: parseSchools(get('school')),
-      note: get('condition') || undefined,
-      unitPrice: Number(get('price')) || 0,
-      quantity: quantityFrom(get('qty')),
-      images: get('image')
-        .split(/[;,]/)
-        .map((s) => s.trim())
-        .filter(Boolean),
-      sourceUrl: get('link').trim() || undefined,
-      sourceLine: i + 1,
-    });
-    idx++;
-  }
-
-  return items;
+/**
+ * Polaris <Badge> has no "subdued" tone — its default (no tone) badge is the
+ * gray one. Map our semantic tone onto what the component accepts.
+ */
+export function polarisBadgeTone(tone: BadgeTone): 'success' | 'attention' | undefined {
+  return tone === 'subdued' ? undefined : tone;
 }
 
-export const ITEMS = parseInventory(inventoryMd);
+/** "$5" for a single price, "$3–$5" for a range. */
+export function priceLabel(item: Pick<Item, 'priceMin' | 'priceMax'>): string {
+  return item.priceMin === item.priceMax
+    ? `$${item.priceMin}`
+    : `$${item.priceMin}–$${item.priceMax}`;
+}
+
+/** A listing is sold out only when nothing is available AND nothing is reserved. */
+export function isSoldOut(item: Pick<Item, 'availableCount' | 'reservedCount'>): boolean {
+  return item.availableCount <= 0 && item.reservedCount <= 0;
+}
+
+function toItem(p: GeneratedProduct): Item {
+  return {
+    ...p,
+    displayName: displayNameFor(p.section, p.name),
+    unitPrice: p.priceMin,
+    quantity: p.availableCount,
+    sourceLine: 0,
+  };
+}
+
+export const ITEMS: Item[] = (generated as GeneratedProduct[]).map(toItem);

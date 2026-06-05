@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Badge, BlockStack, Box, Button, Divider, InlineStack, Text } from '@shopify/polaris';
-import type { Item } from '../data/inventory';
+import { isSoldOut, polarisBadgeTone, priceLabel, type Item } from '../data/inventory';
 import { GarmentThumbnail } from './GarmentThumbnail';
 import { PhotoGallery } from './PhotoGallery';
 import { ManagePhotosPanel } from './ManagePhotosPanel';
@@ -20,6 +20,12 @@ function colorFor(name: string): { hex: string; label: string } | null {
   if (n.includes('khaki')) return { hex: '#ccbb98', label: 'Khaki' };
   if (n.includes('black')) return { hex: '#1a1a1a', label: 'Black' };
   return null;
+}
+
+function statusTone(status: string): 'success' | 'attention' | undefined {
+  if (status === 'Available') return 'success';
+  if (status === 'Reserved') return 'attention';
+  return undefined;
 }
 
 export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Props) {
@@ -82,8 +88,15 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
     if (s.x < 28 && dx > 70 && Math.abs(dy) < 50) onClose();
   };
 
-  const soldOut = current ? current.quantity <= 0 : false;
+  const soldOut = current ? isSoldOut(current) : false;
   const color = current ? colorFor(current.name) : null;
+  // Show the per-garment breakdown only when it adds information beyond the
+  // summary above (multiple pieces, a reserved/sold piece, or a flaw note).
+  const showInstances =
+    !!current &&
+    current.instances.length > 0 &&
+    (current.instances.length > 1 ||
+      current.instances.some((i) => i.conditionNotes || i.status !== 'Available'));
 
   return (
     <>
@@ -204,12 +217,12 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
                 {/* Price + availability badge inline */}
                 <InlineStack gap="300" blockAlign="center">
                   <Text variant="heading2xl" as="p">
-                    {`$${current.unitPrice}`}
+                    {priceLabel(current)}
                   </Text>
                   {soldOut ? (
                     <Badge tone="critical">Sold out</Badge>
                   ) : (
-                    <Badge tone="success">{`${current.quantity} available`}</Badge>
+                    <Badge tone={polarisBadgeTone(current.badge.tone)}>{current.badge.label}</Badge>
                   )}
                 </InlineStack>
 
@@ -264,6 +277,47 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
                     )}
                   </InlineStack>
                 </BlockStack>
+
+                {showInstances && (
+                  <>
+                    <Divider />
+                    <BlockStack gap="200">
+                      <Text variant="headingSm" as="h2">
+                        {`This listing has ${current.instances.length} ${
+                          current.instances.length === 1 ? 'item' : 'items'
+                        }`}
+                      </Text>
+                      {current.instances.map((inst) => (
+                        <Box
+                          key={inst.label}
+                          borderColor="border"
+                          borderWidth="025"
+                          borderRadius="200"
+                          padding="300"
+                        >
+                          <InlineStack align="space-between" blockAlign="center" gap="200">
+                            <BlockStack gap="050">
+                              <Text as="span" variant="bodyMd" fontWeight="semibold">
+                                {inst.condition || '—'}
+                              </Text>
+                              {inst.conditionNotes && (
+                                <Text as="span" variant="bodySm" tone="subdued">
+                                  {inst.conditionNotes}
+                                </Text>
+                              )}
+                            </BlockStack>
+                            <InlineStack gap="200" blockAlign="center">
+                              {inst.price != null && (
+                                <Text as="span" variant="bodyMd">{`$${inst.price}`}</Text>
+                              )}
+                              <Badge tone={statusTone(inst.status)}>{inst.status}</Badge>
+                            </InlineStack>
+                          </InlineStack>
+                        </Box>
+                      ))}
+                    </BlockStack>
+                  </>
+                )}
 
                 {current.sourceUrl && (
                   <Button url={current.sourceUrl} target="_blank" variant="plain">

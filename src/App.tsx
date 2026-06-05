@@ -15,7 +15,7 @@ import {
 } from '@shopify/polaris';
 import enTranslations from '@shopify/polaris/locales/en.json';
 import '@shopify/polaris/build/esm/styles.css';
-import { EDIT_INVENTORY_URL, ITEMS, type Item, type SchoolName } from './data/inventory';
+import { EDIT_INVENTORY_URL, isSoldOut, ITEMS, type Item, type SchoolName } from './data/inventory';
 import { ItemCard } from './components/ItemCard';
 import { EmptyResults } from './components/EmptySchoolState';
 import { ItemDetailPanel } from './components/ItemDetailPanel';
@@ -90,7 +90,7 @@ function Section({ title, items, localSold, manageMode, onToggleLocal, onOpen }:
           <ItemCard
             key={item.id}
             item={item}
-            publishedSold={item.quantity <= 0}
+            publishedSold={isSoldOut(item)}
             localSold={localSold.has(item.id)}
             manageMode={manageMode}
             onToggleLocal={onToggleLocal}

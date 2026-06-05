@@ -1,5 +1,5 @@
 import { Badge, BlockStack, Box, Button, Card, Link, Text, Tooltip } from '@shopify/polaris';
-import { editLineUrl, resolveImage, type Item } from '../data/inventory';
+import { editLineUrl, polarisBadgeTone, priceLabel, resolveImage, type Item } from '../data/inventory';
 import { GarmentThumbnail } from './GarmentThumbnail';
 
 interface Props {
@@ -84,7 +84,7 @@ export function ItemCard({
                 {sold ? (
                   <Badge tone="critical">{publishedSold ? 'Sold out' : 'Sold (your view)'}</Badge>
                 ) : (
-                  <Badge tone="success">{`${item.quantity} available`}</Badge>
+                  <Badge tone={polarisBadgeTone(item.badge.tone)}>{item.badge.label}</Badge>
                 )}
               </div>
             </div>
@@ -119,7 +119,7 @@ export function ItemCard({
 
                 <div style={{ marginTop: 'auto' }}>
                   <Text variant="headingMd" as="p">
-                    {`$${item.unitPrice}`}
+                    {priceLabel(item)}
                   </Text>
                 </div>
               </div>
