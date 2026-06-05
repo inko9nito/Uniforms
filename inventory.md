@@ -44,4 +44,6 @@ the public listings can only be changed by you.
 | Boys | Gray polo | YM | Carrollton | Marker blemish | 5 | 1 |  |  |
 | Boys | White polo | YM | Carrollton |  | 5 | 1 |  |  |
 | Unisex | Spirit shirt | YL | Carrollton |  | 5 | 1 |  |  |
+| Unisex | Navy 1/4-Zip Performance Fleece Pullover | YL | Both |  | 5 | 1 | https://cdn11.bigcommerce.com/s-jjm7kgkrrc/images/stencil/320w/attribute_rule_images/1154203_source_1778859607.jpg |  |
+| Unisex | Gray Full-Zip Fleece Jacket | YL | Both |  | 5 | 1 | https://cdn11.bigcommerce.com/s-jjm7kgkrrc/images/stencil/320w/attribute_rule_images/1324430_source_1778756624.jpg |  |
 | Boys | Navy twill pants | 12R | Carrollton |  | 5 | 1 |  |  |
