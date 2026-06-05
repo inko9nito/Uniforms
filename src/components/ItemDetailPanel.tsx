@@ -164,19 +164,20 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
                   )}
                 </InlineStack>
 
-                {/* Campus badges below price */}
-                <InlineStack gap="200">
-                  {current.schools.map((s) => (
-                    <Badge key={s} tone="info">
-                      {s}
-                    </Badge>
-                  ))}
-                </InlineStack>
-
                 <Divider />
 
-                {/* Properties: color swatch + size */}
+                {/* Properties */}
                 <BlockStack gap="300">
+                  <InlineStack gap="400" blockAlign="center">
+                    <div style={{ minWidth: 48 }}>
+                      <Text as="span" tone="subdued">Campus</Text>
+                    </div>
+                    <InlineStack gap="150">
+                      {current.schools.map((s) => (
+                        <Badge key={s} tone="info">{s}</Badge>
+                      ))}
+                    </InlineStack>
+                  </InlineStack>
                   {color && (
                     <InlineStack gap="400" blockAlign="center">
                       <div style={{ minWidth: 48 }}>
