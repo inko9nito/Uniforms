@@ -57,12 +57,13 @@ export function GarmentThumbnail({ item }: Props) {
   return (
     <div
       style={{
-        height: 150,
+        height: '100%',
+        minHeight: 160,
+        width: '100%',
         background: 'linear-gradient(180deg, #fafbfb 0%, #f1f2f4 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        borderBottom: '1px solid #e3e5e7',
       }}
     >
       <svg

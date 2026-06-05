@@ -55,18 +55,24 @@ export function ItemCard({
             }}
             style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', flex: 1 }}
           >
-            <div style={{ position: 'relative' }}>
+            <div
+              style={{
+                position: 'relative',
+                height: 160,
+                overflow: 'hidden',
+                borderBottom: '1px solid #e3e5e7',
+              }}
+            >
               {item.images.length > 0 ? (
                 <img
                   src={resolveImage(item.images[0]!)}
                   alt={item.name}
                   loading="lazy"
                   style={{
-                    height: 160,
+                    height: '100%',
                     width: '100%',
                     objectFit: 'cover',
                     display: 'block',
-                    borderBottom: '1px solid #e3e5e7',
                   }}
                 />
               ) : (
