@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Badge, BlockStack, Button, InlineStack, Spinner, Text, TextField } from '@shopify/polaris';
 import type { Item } from '../data/inventory';
 import { resolveImage } from '../data/inventory';
@@ -8,8 +8,10 @@ import {
   getFile,
   loadToken,
   putFile,
-  removeImageFromInventoryContent,
   saveToken,
+  setInventoryImages,
+  setInventoryQuantity,
+  setInventorySize,
   slugify,
 } from '../data/github';
 
@@ -28,7 +30,20 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
   const [status, setStatus] = useState<Status>({ type: 'idle' });
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Editable drafts, seeded from the item and re-seeded when a different item opens.
+  const [sizeDraft, setSizeDraft] = useState(item.size);
+  const [qtyDraft, setQtyDraft] = useState(String(item.quantity));
+  // Local image order for responsive reordering before the site rebuilds.
+  const [images, setImages] = useState<string[]>(item.images);
+
+  useEffect(() => {
+    setSizeDraft(item.size);
+    setQtyDraft(String(item.quantity));
+    setImages(item.images);
+  }, [item]);
+
   const hasToken = token.length > 0;
+  const busy = status.type === 'busy';
 
   function handleSaveToken() {
     const t = tokenDraft.trim();
@@ -38,30 +53,50 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
     setShowTokenInput(false);
   }
 
-  async function commitImage(base64: string, _filename: string, mimeType: string) {
+  /** Fetch inventory.md, apply a transform, and commit it back. */
+  async function patchInventory(transform: (content: string) => string, message: string) {
+    const { content, sha } = await getFile(token, 'inventory.md');
+    const updated = transform(content);
+    await putFile(token, 'inventory.md', btoa(unescape(encodeURIComponent(updated))), sha, message);
+  }
+
+  async function handleSaveDetails() {
+    const size = sizeDraft.trim();
+    const qty = Math.max(0, Math.floor(Number(qtyDraft)));
+    if (!Number.isFinite(qty)) {
+      setStatus({ type: 'error', msg: 'Quantity must be a number' });
+      return;
+    }
+    try {
+      setStatus({ type: 'busy', msg: 'Saving details…' });
+      await patchInventory(
+        (content) =>
+          setInventoryQuantity(setInventorySize(content, item.sourceLine, size), item.sourceLine, qty),
+        `Update ${item.displayName}: size ${size}, qty ${qty}`,
+      );
+      setStatus({ type: 'done' });
+      onPhotosChanged();
+    } catch (err) {
+      setStatus({ type: 'error', msg: (err as Error).message });
+    }
+  }
+
+  async function commitImage(base64: string, mimeType: string) {
     const ext = mimeType.includes('png') ? 'png' : mimeType.includes('gif') ? 'gif' : mimeType.includes('webp') ? 'webp' : 'jpg';
     const safeName = `${slugify(item.name)}-${Date.now()}.${ext}`;
     const imagePath = `images/${safeName}`;
     const repoPath = `public/images/${safeName}`;
 
     setStatus({ type: 'busy', msg: 'Uploading photo…' });
-
-    // Upload image file
     await putFile(token, repoPath, base64, null, `Add photo for ${item.displayName}`);
 
     setStatus({ type: 'busy', msg: 'Updating inventory…' });
-
-    // Read current inventory.md and patch the row
-    const { content, sha } = await getFile(token, 'inventory.md');
-    const updated = addImageToInventoryContent(content, item.sourceLine, imagePath);
-    await putFile(
-      token,
-      'inventory.md',
-      btoa(unescape(encodeURIComponent(updated))),
-      sha,
+    await patchInventory(
+      (content) => addImageToInventoryContent(content, item.sourceLine, imagePath),
       `Add photo to ${item.displayName}`,
     );
 
+    setImages((prev) => [...prev, imagePath]);
     setStatus({ type: 'done' });
     onPhotosChanged();
   }
@@ -71,7 +106,7 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
     if (!file) return;
     try {
       const base64 = await fileToBase64(file);
-      await commitImage(base64, file.name, file.type);
+      await commitImage(base64, file.type);
     } catch (err) {
       setStatus({ type: 'error', msg: (err as Error).message });
     } finally {
@@ -83,18 +118,12 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
     const url = urlDraft.trim();
     if (!url) return;
     try {
-      setStatus({ type: 'busy', msg: 'Fetching image…' });
-      // For external URLs, add directly as a URL reference (no re-hosting needed)
-      const { content, sha } = await getFile(token, 'inventory.md');
-      const updated = addImageToInventoryContent(content, item.sourceLine, url);
       setStatus({ type: 'busy', msg: 'Updating inventory…' });
-      await putFile(
-        token,
-        'inventory.md',
-        btoa(unescape(encodeURIComponent(updated))),
-        sha,
+      await patchInventory(
+        (content) => addImageToInventoryContent(content, item.sourceLine, url),
         `Add photo URL to ${item.displayName}`,
       );
+      setImages((prev) => [...prev, url]);
       setUrlDraft('');
       setStatus({ type: 'done' });
       onPhotosChanged();
@@ -103,32 +132,40 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
     }
   }
 
-  async function handleRemovePhoto(imagePath: string) {
-    if (!hasToken) return;
+  /** Commit a new ordered image list (used for both remove and reorder). */
+  async function commitImageOrder(next: string[], message: string) {
+    const prev = images;
+    setImages(next); // optimistic
     try {
-      setStatus({ type: 'busy', msg: 'Removing photo…' });
-      const { content, sha } = await getFile(token, 'inventory.md');
-      const updated = removeImageFromInventoryContent(content, item.sourceLine, imagePath);
-      await putFile(
-        token,
-        'inventory.md',
-        btoa(unescape(encodeURIComponent(updated))),
-        sha,
-        `Remove photo from ${item.displayName}`,
-      );
+      setStatus({ type: 'busy', msg: 'Saving photos…' });
+      await patchInventory((content) => setInventoryImages(content, item.sourceLine, next), message);
       setStatus({ type: 'done' });
       onPhotosChanged();
     } catch (err) {
+      setImages(prev); // roll back
       setStatus({ type: 'error', msg: (err as Error).message });
     }
   }
 
-  const busy = status.type === 'busy';
+  function handleRemovePhoto(src: string) {
+    if (!hasToken) return;
+    commitImageOrder(images.filter((s) => s !== src), `Remove photo from ${item.displayName}`);
+  }
+
+  function handleMove(index: number, dir: -1 | 1) {
+    const target = index + dir;
+    if (target < 0 || target >= images.length) return;
+    const next = [...images];
+    [next[index], next[target]] = [next[target], next[index]];
+    commitImageOrder(next, `Reorder photos for ${item.displayName}`);
+  }
+
+  const detailsDirty = sizeDraft.trim() !== item.size || qtyDraft.trim() !== String(item.quantity);
 
   return (
-    <BlockStack gap="300">
+    <BlockStack gap="400">
       <InlineStack align="space-between" blockAlign="center">
-        <Text variant="headingSm" as="h3">Photos</Text>
+        <Text variant="headingSm" as="h3">Edit item</Text>
         {hasToken ? (
           <Button
             variant="plain"
@@ -174,34 +211,87 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
         </BlockStack>
       )}
 
-      {/* Current photos list */}
-      {item.images.length > 0 && (
+      {/* Size + quantity */}
+      {hasToken && (
         <BlockStack gap="200">
-          {item.images.map((src) => (
-            <InlineStack key={src} gap="200" blockAlign="center" wrap={false}>
-              <img
-                src={resolveImage(src)}
-                alt=""
-                style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, flexShrink: 0, border: '1px solid #e3e5e7' }}
+          <InlineStack gap="300" wrap={false}>
+            <div style={{ flex: 1 }}>
+              <TextField
+                label="Size"
+                value={sizeDraft}
+                onChange={setSizeDraft}
+                autoComplete="off"
+                disabled={busy}
               />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: 12, color: '#6d7175', wordBreak: 'break-all' }}>
-                  {src.length > 50 ? `…${src.slice(-44)}` : src}
-                </span>
-              </div>
-              <Button
-                variant="plain"
-                tone="critical"
-                size="slim"
-                disabled={busy || !hasToken}
-                onClick={() => handleRemovePhoto(src)}
-              >
-                Remove
-              </Button>
-            </InlineStack>
-          ))}
+            </div>
+            <div style={{ width: 100 }}>
+              <TextField
+                label="Quantity"
+                type="number"
+                min={0}
+                value={qtyDraft}
+                onChange={setQtyDraft}
+                autoComplete="off"
+                disabled={busy}
+              />
+            </div>
+          </InlineStack>
+          <InlineStack>
+            <Button onClick={handleSaveDetails} disabled={busy || !detailsDirty} size="slim">
+              Save details
+            </Button>
+          </InlineStack>
         </BlockStack>
       )}
+
+      {/* Photos list with reorder + remove */}
+      <BlockStack gap="200">
+        <Text variant="headingSm" as="h3">Photos</Text>
+        {images.length === 0 && (
+          <Text as="p" variant="bodySm" tone="subdued">No photos yet.</Text>
+        )}
+        {images.map((src, i) => (
+          <InlineStack key={src} gap="200" blockAlign="center" wrap={false}>
+            <img
+              src={resolveImage(src)}
+              alt=""
+              style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, flexShrink: 0, border: '1px solid #e3e5e7' }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 12, color: '#6d7175', wordBreak: 'break-all' }}>
+                {src.length > 40 ? `…${src.slice(-34)}` : src}
+              </span>
+            </div>
+            <Button
+              variant="tertiary"
+              size="slim"
+              accessibilityLabel="Move photo up"
+              disabled={busy || !hasToken || i === 0}
+              onClick={() => handleMove(i, -1)}
+            >
+              ↑
+            </Button>
+            <Button
+              variant="tertiary"
+              size="slim"
+              accessibilityLabel="Move photo down"
+              disabled={busy || !hasToken || i === images.length - 1}
+              onClick={() => handleMove(i, 1)}
+            >
+              ↓
+            </Button>
+            <Button
+              variant="plain"
+              tone="critical"
+              size="slim"
+              disabled={busy || !hasToken}
+              onClick={() => handleRemovePhoto(src)}
+            >
+              Remove
+            </Button>
+          </InlineStack>
+        ))}
+      </BlockStack>
 
       {/* Add controls */}
       {hasToken && (
@@ -214,33 +304,25 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
             onChange={handleFileChange}
           />
           <InlineStack gap="200">
-            <Button
-              onClick={() => fileRef.current?.click()}
-              disabled={busy}
-              size="slim"
-            >
+            <Button onClick={() => fileRef.current?.click()} disabled={busy} size="slim">
               Upload photo from device
             </Button>
           </InlineStack>
 
-          <InlineStack gap="200" blockAlign="center" wrap={false}>
-            <div style={{ flex: 1 }}>
-              <TextField
-                label=""
-                labelHidden
-                value={urlDraft}
-                onChange={setUrlDraft}
-                placeholder="Or paste an image URL…"
-                autoComplete="off"
-                disabled={busy}
-                connectedRight={
-                  <Button onClick={handleAddUrl} disabled={busy || !urlDraft.trim()} size="slim">
-                    Add URL
-                  </Button>
-                }
-              />
-            </div>
-          </InlineStack>
+          <TextField
+            label=""
+            labelHidden
+            value={urlDraft}
+            onChange={setUrlDraft}
+            placeholder="Or paste an image URL…"
+            autoComplete="off"
+            disabled={busy}
+            connectedRight={
+              <Button onClick={handleAddUrl} disabled={busy || !urlDraft.trim()} size="slim">
+                Add URL
+              </Button>
+            }
+          />
         </BlockStack>
       )}
 
