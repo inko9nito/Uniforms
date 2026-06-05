@@ -30,6 +30,18 @@ jobs:
           cache: npm
       - run: npm ci
         if: github.event.action != 'closed'
+
+      # Pull live inventory + photos from Airtable into the preview build.
+      # Non-fatal: if AIRTABLE_TOKEN isn't set (or Airtable is unreachable) the
+      # preview still builds from the committed inventory.generated.json snapshot
+      # and shows garment illustrations instead of failing.
+      - name: Sync inventory from Airtable
+        if: github.event.action != 'closed'
+        continue-on-error: true
+        env:
+          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+        run: node scripts/fetch-airtable.mjs
+
       - run: npm run build
         if: github.event.action != 'closed'
 
