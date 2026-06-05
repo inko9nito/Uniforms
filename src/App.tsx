@@ -18,7 +18,8 @@ import enTranslations from '@shopify/polaris/locales/en.json';
 import '@shopify/polaris/build/esm/styles.css';
 import { EDIT_INVENTORY_URL, ITEMS, type Item, type SchoolName } from './data/inventory';
 import { ItemCard } from './components/ItemCard';
-import { EmptySchoolState } from './components/EmptySchoolState';
+import { EmptyResults } from './components/EmptySchoolState';
+import { ItemDetailModal } from './components/ItemDetailModal';
 
 const STORAGE_KEY = 'fca-uniform-local-sold-ids';
 const MESSENGER_URL = 'https://m.me/inko9nito';
@@ -54,9 +55,10 @@ interface SectionProps {
   localSold: Set<string>;
   manageMode: boolean;
   onToggleLocal: (id: string) => void;
+  onOpen: (item: Item) => void;
 }
 
-function Section({ title, items, localSold, manageMode, onToggleLocal }: SectionProps) {
+function Section({ title, items, localSold, manageMode, onToggleLocal, onOpen }: SectionProps) {
   if (items.length === 0) return null;
 
   const availablePieces = items.reduce(
@@ -90,6 +92,7 @@ function Section({ title, items, localSold, manageMode, onToggleLocal }: Section
             localSold={localSold.has(item.id)}
             manageMode={manageMode}
             onToggleLocal={onToggleLocal}
+            onOpen={onOpen}
           />
         ))}
       </div>
@@ -102,6 +105,7 @@ export default function App() {
   const [tabIndex, setTabIndex] = useState(0);
   const [manageMode, setManageMode] = useState(false);
   const [sectionId, setSectionId] = useState('all');
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
   const handleToggleLocal = useCallback((id: string) => {
     setLocalSold((prev) => {
@@ -202,7 +206,7 @@ export default function App() {
             </ButtonGroup>
 
             {sections.length === 0 ? (
-              <EmptySchoolState school={activeSchool ?? 'this school'} />
+              <EmptyResults />
             ) : (
               sections.map((section, i) => (
                 <BlockStack key={section.name} gap="600">
@@ -213,6 +217,7 @@ export default function App() {
                     localSold={localSold}
                     manageMode={manageMode}
                     onToggleLocal={handleToggleLocal}
+                    onOpen={setSelectedItem}
                   />
                 </BlockStack>
               ))
@@ -220,6 +225,13 @@ export default function App() {
           </BlockStack>
           </Box>
         </Page>
+
+        <ItemDetailModal
+          item={selectedItem}
+          open={selectedItem !== null}
+          onClose={() => setSelectedItem(null)}
+          messengerUrl={MESSENGER_URL}
+        />
       </Box>
     </AppProvider>
   );
