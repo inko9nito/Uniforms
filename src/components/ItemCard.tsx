@@ -61,9 +61,7 @@ export function ItemCard({ item, publishedSold, localSold, manageMode, onToggleL
               {sold ? (
                 <Badge tone="critical">{publishedSold ? 'Sold out' : 'Sold (your view)'}</Badge>
               ) : (
-                <Badge tone="success">
-                  {item.quantity > 1 ? `${item.quantity} available` : 'Available'}
-                </Badge>
+                <Badge tone="success">{`${item.quantity} available`}</Badge>
               )}
             </div>
           </div>
