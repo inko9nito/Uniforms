@@ -64,17 +64,19 @@ export function ItemCard({
               }}
             >
               {item.images.length > 0 ? (
-                <img
-                  src={resolveImage(item.images[0]!)}
-                  alt={item.name}
-                  loading="lazy"
-                  style={{
-                    height: '100%',
-                    width: '100%',
-                    objectFit: 'cover',
-                    display: 'block',
-                  }}
-                />
+                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12, background: '#fff', boxSizing: 'border-box' }}>
+                  <img
+                    src={resolveImage(item.images[0]!)}
+                    alt={item.name}
+                    loading="lazy"
+                    style={{
+                      maxHeight: '100%',
+                      maxWidth: '100%',
+                      objectFit: 'contain',
+                      display: 'block',
+                    }}
+                  />
+                </div>
               ) : (
                 <GarmentThumbnail item={item} />
               )}

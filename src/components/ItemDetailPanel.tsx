@@ -101,7 +101,7 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
                 position: 'relative',
                 height: 'min(48vh, 400px)',
                 minHeight: 260,
-                background: '#f6f6f7',
+                background: '#fff',
                 flexShrink: 0,
               }}
             >

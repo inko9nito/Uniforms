@@ -32,7 +32,7 @@ export function PhotoGallery({ images, alt }: Props) {
           height: '100%',
           overflowX: 'auto',
           scrollSnapType: 'x mandatory',
-          background: '#f6f6f7',
+          background: '#fff',
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none',
         }}
