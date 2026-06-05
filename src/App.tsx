@@ -6,6 +6,7 @@ import {
   BlockStack,
   Box,
   Button,
+  ButtonGroup,
   Divider,
   InlineStack,
   Link,
@@ -39,6 +40,12 @@ const SCHOOL_TABS: { id: string; content: string; school: SchoolName | null }[] 
   { id: 'all', content: 'All schools', school: null },
   { id: 'carrollton', content: 'Carrollton', school: 'Carrollton' },
   { id: 'frisco', content: 'Frisco', school: 'Frisco' },
+];
+
+const SECTION_FILTERS: { id: string; label: string; section: string | null }[] = [
+  { id: 'all', label: 'All', section: null },
+  { id: 'boys', label: 'Boys', section: 'Boys' },
+  { id: 'girls', label: 'Girls', section: 'Girls' },
 ];
 
 interface SectionProps {
@@ -94,6 +101,7 @@ export default function App() {
   const [localSold, setLocalSold] = useState<Set<string>>(loadLocalSold);
   const [tabIndex, setTabIndex] = useState(0);
   const [manageMode, setManageMode] = useState(false);
+  const [sectionId, setSectionId] = useState('all');
 
   const handleToggleLocal = useCallback((id: string) => {
     setLocalSold((prev) => {
@@ -106,13 +114,16 @@ export default function App() {
   }, []);
 
   const activeSchool = SCHOOL_TABS[tabIndex]?.school ?? null;
+  const activeSection = SECTION_FILTERS.find((s) => s.id === sectionId)?.section ?? null;
 
   const visibleItems = useMemo(
     () =>
-      activeSchool
-        ? ITEMS.filter((i) => i.schools.includes(activeSchool))
-        : ITEMS,
-    [activeSchool],
+      ITEMS.filter(
+        (i) =>
+          (activeSchool ? i.schools.includes(activeSchool) : true) &&
+          (activeSection ? i.section === activeSection : true),
+      ),
+    [activeSchool, activeSection],
   );
 
   const sections = useMemo(() => {
@@ -126,17 +137,12 @@ export default function App() {
     }));
   }, [visibleItems]);
 
-  const totalAvailable = visibleItems.reduce(
-    (sum, i) => sum + (localSold.has(i.id) ? 0 : i.quantity),
-    0,
-  );
-
   return (
     <AppProvider i18n={enTranslations}>
       <Box paddingBlockEnd="800">
         <Page
-          title="FCA Carrollton Uniform Resale"
-          subtitle={`The Shops at Legacy, Plano · Founders Classical Academy · ${totalAvailable} items available`}
+          title="FCA Uniform Resale"
+          subtitle="Location: The Shops at Legacy, Plano"
           primaryAction={{
             content: 'Message me on Facebook',
             url: MESSENGER_URL,
@@ -182,6 +188,18 @@ export default function App() {
             )}
 
             <Tabs tabs={SCHOOL_TABS} selected={tabIndex} onSelect={setTabIndex} />
+
+            <ButtonGroup variant="segmented">
+              {SECTION_FILTERS.map((s) => (
+                <Button
+                  key={s.id}
+                  pressed={sectionId === s.id}
+                  onClick={() => setSectionId(s.id)}
+                >
+                  {s.label}
+                </Button>
+              ))}
+            </ButtonGroup>
 
             {sections.length === 0 ? (
               <EmptySchoolState school={activeSchool ?? 'this school'} />
