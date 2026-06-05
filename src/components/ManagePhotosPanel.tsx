@@ -32,7 +32,9 @@ import {
 
 interface Props {
   item: Item;
-  onPhotosChanged: () => void;
+  /** Called after a successful save so the detail view can reflect edits
+      optimistically, before the site rebuilds from the new inventory.md. */
+  onItemPatched: (patch: Partial<Item>) => void;
 }
 
 type Status =
@@ -55,7 +57,18 @@ function formatSchools(selected: string[]): string {
   return 'Carrollton';
 }
 
-export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
+/** Selected campus values → the parsed SchoolName[] the detail view expects. */
+function campusToSchools(selected: string[]): SchoolName[] {
+  const out = selected.filter((s): s is SchoolName => s === 'Carrollton' || s === 'Frisco');
+  return out.length > 0 ? out : ['Carrollton'];
+}
+
+/** Mirror inventory.ts: Girls/Boys get a section prefix, everything else is plain. */
+function displayNameFor(section: string, name: string): string {
+  return section === 'Girls' || section === 'Boys' ? `${section} ${name}` : name;
+}
+
+export function ManagePhotosPanel({ item, onItemPatched }: Props) {
   const [token, setToken] = useState(loadToken);
   const [tokenDraft, setTokenDraft] = useState('');
   const [showTokenInput, setShowTokenInput] = useState(false);
@@ -145,7 +158,17 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
         `Update ${title}: details`,
       );
       setStatus({ type: 'done' });
-      onPhotosChanged();
+      onItemPatched({
+        name: title,
+        displayName: displayNameFor(genderDraft, title),
+        section: genderDraft,
+        schools: campusToSchools(campusDraft),
+        size,
+        note: condition || undefined,
+        unitPrice: price,
+        quantity: qty,
+        sourceUrl: linkDraft.trim() || undefined,
+      });
     } catch (err) {
       setStatus({ type: 'error', msg: (err as Error).message });
     }
@@ -172,9 +195,12 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
       `Add photo to ${item.displayName}`,
     );
 
-    setImages((prev) => [...prev, imagePath]);
+    setImages((prev) => {
+      const next = [...prev, imagePath];
+      onItemPatched({ images: next });
+      return next;
+    });
     setStatus({ type: 'done' });
-    onPhotosChanged();
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -199,10 +225,13 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
         (content) => addImageToInventoryContent(content, item.sourceLine, url),
         `Add photo URL to ${item.displayName}`,
       );
-      setImages((prev) => [...prev, url]);
+      setImages((prev) => {
+        const next = [...prev, url];
+        onItemPatched({ images: next });
+        return next;
+      });
       setUrlDraft('');
       setStatus({ type: 'done' });
-      onPhotosChanged();
     } catch (err) {
       setStatus({ type: 'error', msg: (err as Error).message });
     }
@@ -212,6 +241,7 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
   async function commitImageOrder(next: string[], message: string) {
     const prev = images;
     setImages(next);
+    onItemPatched({ images: next }); // optimistic
     try {
       setStatus({ type: 'busy', msg: 'Saving photos…' });
       await patchInventory(
@@ -219,9 +249,9 @@ export function ManagePhotosPanel({ item, onPhotosChanged }: Props) {
         message,
       );
       setStatus({ type: 'done' });
-      onPhotosChanged();
     } catch (err) {
       setImages(prev);
+      onItemPatched({ images: prev }); // roll back
       setStatus({ type: 'error', msg: (err as Error).message });
     }
   }
