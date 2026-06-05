@@ -37,8 +37,8 @@ the public listings can only be changed by you.
 | Girls | Gray polo | YS | Carrollton |  | 5 | 2 | images/polo-girls-gray.jpg |  |
 | Girls | White polo | YS | Carrollton | Small marker blemish | 5 | 1 | images/polo-girls-white.jpg |  |
 | Girls | Pleat skort | 8R | Carrollton |  | 5 | 1 | images/skort-girls-pleat.jpg |  |
-| Girls | Twill walking shorts | 8R | Carrollton | Brand new with tags | 5 | 1 | images/shorts-girls-twill.jpg |  |
-| Girls | Flat-front shorts | 8R | Carrollton |  | 5 | 1 | images/shorts-girls-flatfront.jpg |  |
+| Girls | Twill walking shorts | 8R | Carrollton | Brand new with tags | 5 | 1 | images/shorts-girls-flatfront.jpg |  |
+| Boys | Flat-front shorts | 8R | Carrollton | Brand new, no tags | 5 | 1 | images/shorts-girls-twill.jpg |  |
 | Boys | Navy polo | YM | Carrollton |  | 5 | 1 | images/polo-boys-navy.jpg |  |
 | Boys | Navy polo (performance) | YM | Carrollton |  | 5 | 2 | images/polo-boys-navy-performance.jpg |  |
 | Boys | Gray polo | YM | Carrollton |  | 5 | 1 | images/polo-boys-gray.jpg |  |
