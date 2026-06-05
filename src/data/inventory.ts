@@ -69,11 +69,8 @@ function quantityFrom(raw: string): number {
   return Number.isFinite(n) && n >= 0 ? n : 1;
 }
 
-/** Items that are the same for either gender and shouldn't be prefixed with a section. */
-const UNISEX = /spirit shirt/i;
-
+/** Girls/Boys items get a section prefix; Unisex (and anything else) keep their plain name. */
 function displayNameFor(section: string, name: string): string {
-  if (UNISEX.test(name)) return name;
   if (section === 'Girls' || section === 'Boys') return `${section} ${name}`;
   return name;
 }
