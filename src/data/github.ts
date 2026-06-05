@@ -126,6 +126,40 @@ export function removeImageFromInventoryContent(
   return lines.join('\n');
 }
 
+// Column order in inventory.md:
+// Section(0) Item(1) Size(2) Schools(3) Condition(4) Price(5) Qty(6) Image(7) Link(8)
+const COL = { size: 2, qty: 6, image: 7 } as const;
+
+/** Set a single cell (by column index) in a specific row of inventory.md. */
+export function setInventoryCell(
+  mdContent: string,
+  sourceLine: number,
+  colIndex: number,
+  value: string,
+): string {
+  const lines = mdContent.split('\n');
+  const idx = sourceLine - 1;
+  const line = lines[idx];
+  if (!line) throw new Error('Row not found in inventory');
+
+  const inner = line.trim().replace(/^\|/, '').replace(/\|$/, '');
+  const cells = inner.split('|').map((c) => c.trim());
+  cells[colIndex] = value;
+
+  lines[idx] = '| ' + cells.join(' | ') + ' |';
+  return lines.join('\n');
+}
+
+export const setInventorySize = (md: string, line: number, size: string) =>
+  setInventoryCell(md, line, COL.size, size);
+
+export const setInventoryQuantity = (md: string, line: number, qty: number) =>
+  setInventoryCell(md, line, COL.qty, String(qty));
+
+/** Replace the full ordered image list for a row (used for reorder and remove). */
+export const setInventoryImages = (md: string, line: number, images: string[]) =>
+  setInventoryCell(md, line, COL.image, images.join(', '));
+
 /** Slugify a string for use as a filename. */
 export function slugify(s: string): string {
   return s
