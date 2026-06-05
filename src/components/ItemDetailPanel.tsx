@@ -79,9 +79,26 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
           minHeight: 52,
         }}
       >
-        <Button variant="tertiary" onClick={onClose}>
-          ‹ Back
-        </Button>
+        <button
+          onClick={onClose}
+          aria-label="Go back"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 8,
+            color: '#303030',
+            flexShrink: 0,
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+            <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
         <span
           style={{
             fontWeight: 650,
