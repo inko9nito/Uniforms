@@ -1,20 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  Banner,
-  BlockStack,
-  Button,
-  ChoiceList,
-  Divider,
-  FormLayout,
-  InlineStack,
-  Link,
-  Select,
-  Spinner,
-  Text,
-  TextField,
-  Thumbnail,
-} from '@shopify/polaris';
-import { ArrowDownIcon, ArrowUpIcon, DeleteIcon } from '@shopify/polaris-icons';
+import Heading from '@atlaskit/heading';
+import Button, { IconButton } from '@atlaskit/button/new';
+import Textfield from '@atlaskit/textfield';
+import Select from '@atlaskit/select';
+import { Checkbox } from '@atlaskit/checkbox';
+import SectionMessage from '@atlaskit/section-message';
+import Spinner from '@atlaskit/spinner';
+import ArrowUpIcon from '@atlaskit/icon/core/arrow-up';
+import ArrowDownIcon from '@atlaskit/icon/core/arrow-down';
+import TrashIcon from '@atlaskit/icon/core/delete';
+import { Inline, Stack, Text } from '@atlaskit/primitives';
+import { token } from '@atlaskit/tokens';
 import type { Item, SchoolName } from '../data/inventory';
 import { resolveImage } from '../data/inventory';
 import {
@@ -43,11 +39,13 @@ type Status =
   | { type: 'error'; msg: string }
   | { type: 'done' };
 
+interface GenderOption {
+  label: string;
+  value: string;
+}
+
 const GENDER_OPTIONS = ['Girls', 'Boys', 'Unisex'];
-const CAMPUS_CHOICES: { label: SchoolName; value: SchoolName }[] = [
-  { label: 'Carrollton', value: 'Carrollton' },
-  { label: 'Frisco', value: 'Frisco' },
-];
+const CAMPUS_CHOICES: SchoolName[] = ['Carrollton', 'Frisco'];
 
 /** Serialize the selected campuses back to the inventory.md Schools cell. */
 function formatSchools(selected: string[]): string {
@@ -68,8 +66,18 @@ function displayNameFor(section: string, name: string): string {
   return section === 'Girls' || section === 'Boys' ? `${section} ${name}` : name;
 }
 
+/** A label stacked above its control (Atlaskit Field needs a Form ancestor; this doesn't). */
+function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Stack space="space.050">
+      <Text size="small" weight="medium">{label}</Text>
+      {children}
+    </Stack>
+  );
+}
+
 export function ManagePhotosPanel({ item, onItemPatched }: Props) {
-  const [token, setToken] = useState(loadToken);
+  const [token_, setToken] = useState(loadToken);
   const [tokenDraft, setTokenDraft] = useState('');
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [urlDraft, setUrlDraft] = useState('');
@@ -99,14 +107,15 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
     setImages(item.images);
   }, [item]);
 
-  const hasToken = token.length > 0;
+  const hasToken = token_.length > 0;
   const busy = status.type === 'busy';
 
   // Gender options always include the item's current section, even if it's
   // something custom (e.g. "Other") that isn't in the standard list.
-  const genderOptions = GENDER_OPTIONS.includes(item.section)
+  const genderNames = GENDER_OPTIONS.includes(item.section)
     ? GENDER_OPTIONS
     : [item.section, ...GENDER_OPTIONS];
+  const genderOptions: GenderOption[] = genderNames.map((g) => ({ label: g, value: g }));
 
   function handleSaveToken() {
     const t = tokenDraft.trim();
@@ -116,11 +125,17 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
     setShowTokenInput(false);
   }
 
+  function toggleCampus(name: SchoolName, checked: boolean) {
+    setCampusDraft((prev) =>
+      checked ? [...new Set([...prev, name])] : prev.filter((c) => c !== name),
+    );
+  }
+
   /** Fetch inventory.md, apply a transform, and commit it back. */
   async function patchInventory(transform: (content: string) => string, message: string) {
-    const { content, sha } = await getFile(token, 'inventory.md');
+    const { content, sha } = await getFile(token_, 'inventory.md');
     const updated = transform(content);
-    await putFile(token, 'inventory.md', btoa(unescape(encodeURIComponent(updated))), sha, message);
+    await putFile(token_, 'inventory.md', btoa(unescape(encodeURIComponent(updated))), sha, message);
   }
 
   async function handleSaveDetails() {
@@ -187,7 +202,7 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
     const repoPath = `public/images/${safeName}`;
 
     setStatus({ type: 'busy', msg: 'Uploading photo…' });
-    await putFile(token, repoPath, base64, null, `Add photo for ${item.displayName}`);
+    await putFile(token_, repoPath, base64, null, `Add photo for ${item.displayName}`);
 
     setStatus({ type: 'busy', msg: 'Updating inventory…' });
     await patchInventory(
@@ -268,7 +283,7 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
     const target = index + dir;
     if (target < 0 || target >= images.length) return;
     const next = [...images];
-    [next[index], next[target]] = [next[target], next[index]];
+    [next[index], next[target]] = [next[target]!, next[index]!];
     commitImageOrder(next, `Reorder photos for ${item.displayName}`);
   }
 
@@ -283,52 +298,52 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
     linkDraft.trim() !== (item.sourceUrl ?? '');
 
   return (
-    <BlockStack gap="400">
+    <Stack space="space.300">
       {/* Token setup */}
       {!hasToken && !showTokenInput && (
-        <Banner tone="warning">
-          <BlockStack gap="200">
-            <Text as="p" variant="bodySm">
-              A GitHub token is required to save changes.
-            </Text>
-            <InlineStack>
-              <Button size="slim" onClick={() => setShowTokenInput(true)}>
+        <SectionMessage appearance="warning">
+          <Stack space="space.150">
+            <Text size="small">A GitHub token is required to save changes.</Text>
+            <div>
+              <Button spacing="compact" onClick={() => setShowTokenInput(true)}>
                 Set up token
               </Button>
-            </InlineStack>
-          </BlockStack>
-        </Banner>
+            </div>
+          </Stack>
+        </SectionMessage>
       )}
 
       {showTokenInput && (
-        <BlockStack gap="200">
-          <Text as="p" variant="bodySm" tone="subdued">
+        <Stack space="space.100">
+          <Text size="small" color="color.text.subtle">
             Create a{' '}
-            <Link
-              url="https://github.com/settings/tokens/new?description=FCA+Uniform+Resale&scopes=repo"
+            <a
+              href="https://github.com/settings/tokens/new?description=FCA+Uniform+Resale&scopes=repo"
               target="_blank"
+              rel="noreferrer"
+              style={{ color: token('color.link', '#0c66e4') }}
             >
               GitHub personal access token
-            </Link>{' '}
+            </a>{' '}
             with <strong>repo</strong> scope. Stored only in this browser.
           </Text>
-          <TextField
-            label="GitHub token"
+          <Textfield
             value={tokenDraft}
-            onChange={setTokenDraft}
+            onChange={(e) => setTokenDraft(e.currentTarget.value)}
             type="password"
-            autoComplete="off"
             placeholder="ghp_…"
-            connectedRight={
-              <Button onClick={handleSaveToken} disabled={!tokenDraft.trim()}>
-                Save
-              </Button>
+            elemAfterInput={
+              <div style={{ padding: 2 }}>
+                <Button spacing="compact" onClick={handleSaveToken} isDisabled={!tokenDraft.trim()}>
+                  Save
+                </Button>
+              </div>
             }
           />
-          <InlineStack>
+          <div>
             <Button
-              variant="plain"
-              size="slim"
+              appearance="subtle"
+              spacing="compact"
               onClick={() => {
                 setShowTokenInput(false);
                 setTokenDraft('');
@@ -336,15 +351,16 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
             >
               Cancel
             </Button>
-          </InlineStack>
-        </BlockStack>
+          </div>
+        </Stack>
       )}
 
       {hasToken && !showTokenInput && (
-        <InlineStack align="end">
+        <Inline spread="space-between">
+          <span />
           <Button
-            variant="plain"
-            size="slim"
+            appearance="subtle"
+            spacing="compact"
             onClick={() => {
               setShowTokenInput(true);
               setTokenDraft('');
@@ -352,148 +368,158 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
           >
             Change token
           </Button>
-        </InlineStack>
+        </Inline>
       )}
 
       {/* Details: title, gender, campus, size, condition, price, qty */}
       {hasToken && (
-        <BlockStack gap="300">
-          <FormLayout>
-            <TextField
-              label="Title"
-              value={titleDraft}
-              onChange={setTitleDraft}
-              autoComplete="off"
-              disabled={busy}
-            />
-            <FormLayout.Group>
-              <Select
-                label="Gender"
-                options={genderOptions}
-                value={genderDraft}
-                onChange={setGenderDraft}
-                disabled={busy}
-              />
-              <TextField
-                label="Size"
-                value={sizeDraft}
-                onChange={setSizeDraft}
-                autoComplete="off"
-                disabled={busy}
-              />
-            </FormLayout.Group>
-            <FormLayout.Group>
-              <TextField
-                label="Price"
-                type="number"
-                min={0}
-                prefix="$"
-                value={priceDraft}
-                onChange={setPriceDraft}
-                autoComplete="off"
-                disabled={busy}
-              />
-              <TextField
-                label="Qty"
-                type="number"
-                min={0}
-                value={qtyDraft}
-                onChange={setQtyDraft}
-                autoComplete="off"
-                disabled={busy}
-              />
-            </FormLayout.Group>
-            <TextField
-              label="Condition"
+        <Stack space="space.200">
+          <Labeled label="Title">
+            <Textfield value={titleDraft} onChange={(e) => setTitleDraft(e.currentTarget.value)} isDisabled={busy} />
+          </Labeled>
+          <Inline space="space.200" grow="fill">
+            <div style={{ flex: 1 }}>
+              <Labeled label="Gender">
+                <Select<GenderOption>
+                  inputId="gender-select"
+                  options={genderOptions}
+                  value={genderOptions.find((o) => o.value === genderDraft) ?? null}
+                  onChange={(opt) => opt && setGenderDraft(opt.value)}
+                  isDisabled={busy}
+                  isSearchable={false}
+                />
+              </Labeled>
+            </div>
+            <div style={{ flex: 1 }}>
+              <Labeled label="Size">
+                <Textfield value={sizeDraft} onChange={(e) => setSizeDraft(e.currentTarget.value)} isDisabled={busy} />
+              </Labeled>
+            </div>
+          </Inline>
+          <Inline space="space.200" grow="fill">
+            <div style={{ flex: 1 }}>
+              <Labeled label="Price">
+                <Textfield
+                  type="number"
+                  min={0}
+                  elemBeforeInput={<span style={{ paddingLeft: 6 }}>$</span>}
+                  value={priceDraft}
+                  onChange={(e) => setPriceDraft(e.currentTarget.value)}
+                  isDisabled={busy}
+                />
+              </Labeled>
+            </div>
+            <div style={{ flex: 1 }}>
+              <Labeled label="Qty">
+                <Textfield
+                  type="number"
+                  min={0}
+                  value={qtyDraft}
+                  onChange={(e) => setQtyDraft(e.currentTarget.value)}
+                  isDisabled={busy}
+                />
+              </Labeled>
+            </div>
+          </Inline>
+          <Labeled label="Condition">
+            <Textfield
               value={conditionDraft}
-              onChange={setConditionDraft}
-              autoComplete="off"
-              disabled={busy}
+              onChange={(e) => setConditionDraft(e.currentTarget.value)}
+              isDisabled={busy}
               placeholder="e.g. Brand new with tags"
             />
-            <TextField
-              label="Original product URL"
+          </Labeled>
+          <Labeled label="Original product URL">
+            <Textfield
               type="url"
               value={linkDraft}
-              onChange={setLinkDraft}
-              autoComplete="off"
-              disabled={busy}
+              onChange={(e) => setLinkDraft(e.currentTarget.value)}
+              isDisabled={busy}
               placeholder="https://store.example.com/…"
-              helpText="Link to the original store listing (optional)"
             />
-            <ChoiceList
-              allowMultiple
-              title="Campus"
-              choices={CAMPUS_CHOICES}
-              selected={campusDraft}
-              onChange={setCampusDraft}
-              disabled={busy}
-            />
-          </FormLayout>
-          <InlineStack>
-            <Button onClick={handleSaveDetails} disabled={busy || !detailsDirty} size="slim">
+          </Labeled>
+          <Stack space="space.050">
+            <Text size="small" weight="medium">Campus</Text>
+            {CAMPUS_CHOICES.map((name) => (
+              <Checkbox
+                key={name}
+                label={name}
+                isChecked={campusDraft.includes(name)}
+                onChange={(e) => toggleCampus(name, e.currentTarget.checked)}
+                isDisabled={busy}
+              />
+            ))}
+          </Stack>
+          <div>
+            <Button onClick={handleSaveDetails} isDisabled={busy || !detailsDirty} spacing="compact">
               Save details
             </Button>
-          </InlineStack>
-        </BlockStack>
+          </div>
+        </Stack>
       )}
 
-      <Divider />
+      <div style={{ borderTop: `1px solid ${token('color.border', '#e3e5e7')}` }} />
 
       {/* Photos */}
-      <BlockStack gap="300">
-        <Text variant="headingSm" as="h3">
-          Photos
-        </Text>
+      <Stack space="space.200">
+        <Heading size="small" as="h3">Photos</Heading>
 
         {images.length === 0 && (
-          <Text as="p" variant="bodySm" tone="subdued">
-            No photos yet.
-          </Text>
+          <Text size="small" color="color.text.subtle">No photos yet.</Text>
         )}
 
-        <BlockStack gap="200">
+        <Stack space="space.100">
           {images.map((src, i) => (
-            <InlineStack key={src} gap="300" blockAlign="center" wrap={false}>
-              <Thumbnail source={resolveImage(src)} alt="" size="small" />
+            <Inline key={src} space="space.150" alignBlock="center">
+              <img
+                src={resolveImage(src)}
+                alt=""
+                style={{
+                  width: 40,
+                  height: 40,
+                  objectFit: 'cover',
+                  borderRadius: 4,
+                  border: `1px solid ${token('color.border', '#e3e5e7')}`,
+                  flex: '0 0 auto',
+                }}
+              />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <Text as="span" variant="bodySm" tone="subdued" breakWord>
+                <Text size="small" color="color.text.subtle">
                   {src.length > 36 ? `…${src.slice(-30)}` : src}
                 </Text>
               </div>
-              <InlineStack gap="050" wrap={false}>
-                <Button
+              <Inline space="space.050">
+                <IconButton
                   icon={ArrowUpIcon}
-                  variant="tertiary"
-                  size="slim"
-                  accessibilityLabel="Move photo up"
-                  disabled={busy || !hasToken || i === 0}
+                  label="Move photo up"
+                  appearance="subtle"
+                  spacing="compact"
+                  isDisabled={busy || !hasToken || i === 0}
                   onClick={() => handleMove(i, -1)}
                 />
-                <Button
+                <IconButton
                   icon={ArrowDownIcon}
-                  variant="tertiary"
-                  size="slim"
-                  accessibilityLabel="Move photo down"
-                  disabled={busy || !hasToken || i === images.length - 1}
+                  label="Move photo down"
+                  appearance="subtle"
+                  spacing="compact"
+                  isDisabled={busy || !hasToken || i === images.length - 1}
                   onClick={() => handleMove(i, 1)}
                 />
-                <Button
-                  icon={DeleteIcon}
-                  variant="tertiary"
-                  tone="critical"
-                  size="slim"
-                  accessibilityLabel="Remove photo"
-                  disabled={busy || !hasToken}
+                <IconButton
+                  icon={TrashIcon}
+                  label="Remove photo"
+                  appearance="subtle"
+                  spacing="compact"
+                  isDisabled={busy || !hasToken}
                   onClick={() => handleRemovePhoto(src)}
                 />
-              </InlineStack>
-            </InlineStack>
+              </Inline>
+            </Inline>
           ))}
-        </BlockStack>
+        </Stack>
 
         {hasToken && (
-          <BlockStack gap="200">
+          <Stack space="space.100">
             <input
               ref={fileRef}
               type="file"
@@ -501,52 +527,45 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
               style={{ display: 'none' }}
               onChange={handleFileChange}
             />
-            <InlineStack>
-              <Button onClick={() => fileRef.current?.click()} disabled={busy} size="slim">
+            <div>
+              <Button onClick={() => fileRef.current?.click()} isDisabled={busy} spacing="compact">
                 Upload photo from device
               </Button>
-            </InlineStack>
-            <TextField
-              label="Add from URL"
-              labelHidden
+            </div>
+            <Textfield
               value={urlDraft}
-              onChange={setUrlDraft}
+              onChange={(e) => setUrlDraft(e.currentTarget.value)}
               placeholder="Or paste an image URL…"
-              autoComplete="off"
-              disabled={busy}
-              connectedRight={
-                <Button onClick={handleAddUrl} disabled={busy || !urlDraft.trim()}>
-                  Add
-                </Button>
+              isDisabled={busy}
+              elemAfterInput={
+                <div style={{ padding: 2 }}>
+                  <Button spacing="compact" onClick={handleAddUrl} isDisabled={busy || !urlDraft.trim()}>
+                    Add
+                  </Button>
+                </div>
               }
             />
-          </BlockStack>
+          </Stack>
         )}
-      </BlockStack>
+      </Stack>
 
       {/* Status feedback */}
       {status.type === 'busy' && (
-        <InlineStack gap="200" blockAlign="center">
+        <Inline space="space.100" alignBlock="center">
           <Spinner size="small" />
-          <Text as="span" variant="bodySm" tone="subdued">
-            {status.msg}
-          </Text>
-        </InlineStack>
+          <Text size="small" color="color.text.subtle">{status.msg}</Text>
+        </Inline>
       )}
       {status.type === 'error' && (
-        <Banner tone="critical" onDismiss={() => setStatus({ type: 'idle' })}>
-          <Text as="p" variant="bodySm">
-            {status.msg}
-          </Text>
-        </Banner>
+        <SectionMessage appearance="error">
+          <Text size="small">{status.msg}</Text>
+        </SectionMessage>
       )}
       {status.type === 'done' && (
-        <Banner tone="success" onDismiss={() => setStatus({ type: 'idle' })}>
-          <Text as="p" variant="bodySm">
-            Saved — the site will rebuild in ~1 minute.
-          </Text>
-        </Banner>
+        <SectionMessage appearance="success">
+          <Text size="small">Saved — the site will rebuild in ~1 minute.</Text>
+        </SectionMessage>
       )}
-    </BlockStack>
+    </Stack>
   );
 }

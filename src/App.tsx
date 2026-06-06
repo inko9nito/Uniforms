@@ -1,20 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
-import {
-  AppProvider,
-  Badge,
-  Banner,
-  BlockStack,
-  Box,
-  Button,
-  Divider,
-  InlineStack,
-  Link,
-  Page,
-  Select,
-  Text,
-} from '@shopify/polaris';
-import enTranslations from '@shopify/polaris/locales/en.json';
-import '@shopify/polaris/build/esm/styles.css';
+import Heading from '@atlaskit/heading';
+import Lozenge from '@atlaskit/lozenge';
+import Select from '@atlaskit/select';
+import SectionMessage from '@atlaskit/section-message';
+import { LinkButton } from '@atlaskit/button/new';
+import { Inline, Stack, Text } from '@atlaskit/primitives';
+import { token } from '@atlaskit/tokens';
 import { EDIT_INVENTORY_URL, isSoldOut, ITEMS, type Item, type SchoolName } from './data/inventory';
 import { ItemCard } from './components/ItemCard';
 import { EmptyResults } from './components/EmptySchoolState';
@@ -36,14 +27,19 @@ function saveLocalSold(ids: Set<string>): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]));
 }
 
-const SCHOOL_OPTIONS: { label: string; value: string; school: SchoolName | null }[] = [
+interface FilterOption {
+  label: string;
+  value: string;
+}
+
+const SCHOOL_OPTIONS: (FilterOption & { school: SchoolName | null })[] = [
   { label: 'All campuses', value: 'all', school: null },
   { label: 'Carrollton', value: 'carrollton', school: 'Carrollton' },
   { label: 'Frisco', value: 'frisco', school: 'Frisco' },
 ];
 
 // Order matches the section order on the page (Girls, Boys, then Unisex).
-const GENDER_OPTIONS: { label: string; value: string; section: string | null }[] = [
+const GENDER_OPTIONS: (FilterOption & { section: string | null })[] = [
   { label: 'All genders', value: 'all', section: null },
   { label: 'Girls', value: 'girls', section: 'Girls' },
   { label: 'Boys', value: 'boys', section: 'Boys' },
@@ -68,22 +64,20 @@ function Section({ title, items, localSold, manageMode, onToggleLocal, onOpen }:
   );
 
   return (
-    <BlockStack gap="400">
-      <InlineStack align="space-between" blockAlign="center" gap="200">
-        <Text variant="headingXl" as="h2">
-          {title}
-        </Text>
-        <Badge tone={availablePieces === 0 ? 'critical' : 'success'}>
+    <Stack space="space.200">
+      <Inline spread="space-between" alignBlock="center" space="space.100">
+        <Heading size="large" as="h2">{title}</Heading>
+        <Lozenge appearance={availablePieces === 0 ? 'removed' : 'success'}>
           {`${availablePieces} available`}
-        </Badge>
-      </InlineStack>
+        </Lozenge>
+      </Inline>
 
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
           gridAutoRows: '1fr',
-          gap: '12px',
+          gap: 12,
         }}
       >
         {items.map((item) => (
@@ -98,7 +92,7 @@ function Section({ title, items, localSold, manageMode, onToggleLocal, onOpen }:
           />
         ))}
       </div>
-    </BlockStack>
+    </Stack>
   );
 }
 
@@ -144,91 +138,91 @@ export default function App() {
   }, [visibleItems]);
 
   return (
-    <AppProvider i18n={enTranslations}>
-      <Box paddingBlockEnd="800">
-        <Page
-          title="FCA Uniform Resale"
-          subtitle="Location: The Shops at Legacy, Plano"
-        >
-          <Box paddingBlockStart="200">
-          <BlockStack gap="600">
-            <Banner tone="info">
-              <Text as="p">
-                Everything below is available unless marked <strong>Sold</strong>. To buy
-                something,{' '}
-                <Link url={MESSENGER_URL} external>
-                  message me on Facebook
-                </Link>
-                .
-              </Text>
-            </Banner>
+    <div style={{ minHeight: '100vh', background: token('elevation.surface.sunken', '#f7f8f9') }}>
+      <div style={{ maxWidth: 1024, margin: '0 auto', padding: '24px 16px 96px' }}>
+        <Stack space="space.400">
+          <Stack space="space.050">
+            <Heading size="xlarge" as="h1">FCA Uniform Resale</Heading>
+            <Text color="color.text.subtle">Location: The Shops at Legacy, Plano</Text>
+          </Stack>
 
-            {manageMode && (
-              <Banner tone="warning" title="Manage mode">
-                <BlockStack gap="200">
-                  <Text as="p">
-                    “Mark as sold (your view)” only changes how the page looks in{' '}
-                    <em>this browser</em> — it’s a scratchpad for you. To change what
-                    everyone sees, use the GitHub link on a card (or edit the table
-                    directly) and commit. Only people with write access to the repo can
-                    do that, so buyers can’t alter your listings.
-                  </Text>
-                  <InlineStack>
-                    <Button url={EDIT_INVENTORY_URL} target="_blank" variant="primary">
-                      Edit full inventory on GitHub
-                    </Button>
-                  </InlineStack>
-                </BlockStack>
-              </Banner>
-            )}
+          <SectionMessage appearance="information">
+            <Text>
+              Everything below is available unless marked <strong>Sold</strong>. To buy something,{' '}
+              <a href={MESSENGER_URL} target="_blank" rel="noreferrer" style={{ color: token('color.link', '#0c66e4') }}>
+                message me on Facebook
+              </a>
+              .
+            </Text>
+          </SectionMessage>
 
-            <InlineStack gap="300" wrap={false}>
-              <div style={{ flex: 1 }}>
-                <Select
-                  label="Campus"
-                  options={SCHOOL_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
-                  value={schoolId}
-                  onChange={setSchoolId}
+          {manageMode && (
+            <SectionMessage appearance="warning" title="Manage mode">
+              <Stack space="space.150">
+                <Text>
+                  “Mark as sold (your view)” only changes how the page looks in <em>this browser</em> — it’s a
+                  scratchpad for you. To change what everyone sees, use the GitHub link on a card (or edit the
+                  table directly) and commit. Only people with write access to the repo can do that, so buyers
+                  can’t alter your listings.
+                </Text>
+                <div>
+                  <LinkButton appearance="primary" href={EDIT_INVENTORY_URL} target="_blank">
+                    Edit full inventory on GitHub
+                  </LinkButton>
+                </div>
+              </Stack>
+            </SectionMessage>
+          )}
+
+          <Inline space="space.200" shouldWrap>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <Text size="small" weight="medium">Campus</Text>
+              <Select<FilterOption>
+                inputId="campus-filter"
+                options={SCHOOL_OPTIONS}
+                value={SCHOOL_OPTIONS.find((o) => o.value === schoolId) ?? null}
+                onChange={(opt) => setSchoolId(opt?.value ?? 'all')}
+                isSearchable={false}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <Text size="small" weight="medium">Gender</Text>
+              <Select<FilterOption>
+                inputId="gender-filter"
+                options={GENDER_OPTIONS}
+                value={GENDER_OPTIONS.find((o) => o.value === sectionId) ?? null}
+                onChange={(opt) => setSectionId(opt?.value ?? 'all')}
+                isSearchable={false}
+              />
+            </div>
+          </Inline>
+
+          {sections.length === 0 ? (
+            <EmptyResults />
+          ) : (
+            <Stack space="space.500">
+              {sections.map((section) => (
+                <Section
+                  key={section.name}
+                  title={section.name}
+                  items={section.items}
+                  localSold={localSold}
+                  manageMode={manageMode}
+                  onToggleLocal={handleToggleLocal}
+                  onOpen={setSelectedItem}
                 />
-              </div>
-              <div style={{ flex: 1 }}>
-                <Select
-                  label="Gender"
-                  options={GENDER_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
-                  value={sectionId}
-                  onChange={setSectionId}
-                />
-              </div>
-            </InlineStack>
+              ))}
+            </Stack>
+          )}
+        </Stack>
+      </div>
 
-            {sections.length === 0 ? (
-              <EmptyResults />
-            ) : (
-              sections.map((section, i) => (
-                <BlockStack key={section.name} gap="600">
-                  {i > 0 && <Divider />}
-                  <Section
-                    title={section.name}
-                    items={section.items}
-                    localSold={localSold}
-                    manageMode={manageMode}
-                    onToggleLocal={handleToggleLocal}
-                    onOpen={setSelectedItem}
-                  />
-                </BlockStack>
-              ))
-            )}
-          </BlockStack>
-          </Box>
-        </Page>
-
-        <ItemDetailPanel
-          item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-          messengerUrl={MESSENGER_URL}
-          manageMode={manageMode}
-        />
-      </Box>
+      <ItemDetailPanel
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
+        messengerUrl={MESSENGER_URL}
+        manageMode={manageMode}
+      />
 
       {/* Floating manage mode toggle — visible over the detail panel */}
       <button
@@ -237,7 +231,7 @@ export default function App() {
           position: 'fixed',
           bottom: 24,
           right: 24,
-          zIndex: 530,
+          zIndex: 300,
           height: 44,
           padding: '0 20px',
           borderRadius: 22,
@@ -254,6 +248,6 @@ export default function App() {
       >
         {manageMode ? 'Done editing' : 'Edit'}
       </button>
-    </AppProvider>
+    </div>
   );
 }

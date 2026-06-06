@@ -18,7 +18,7 @@ A React + Vite + TypeScript static site for selling second-hand school uniforms.
 |---|---|
 | UI framework | React 18 + TypeScript |
 | Build tool | Vite (base: `'./'` — relative, so builds work at root and at PR preview sub-paths) |
-| Component library | Shopify Polaris v12 (`@shopify/polaris-icons` available as transitive dep — import directly) |
+| Component library | **Atlassian Design System (Atlaskit)** — `@atlaskit/*`. Theme set up once in `main.tsx` via `setGlobalTheme({ colorMode: 'light' })` + `@atlaskit/css-reset`. Use the `token()` helper from `@atlaskit/tokens` for colors in inline styles. (Migrated off Shopify Polaris in #55.) |
 | Data source | **Airtable** → `src/data/inventory.generated.json` (built by `scripts/fetch-airtable.mjs`), imported in `src/data/inventory.ts` |
 | Image storage | `public/images/` (legacy) + `public/images/airtable/` (downloaded from Airtable at build time) |
 | Hosting | GitHub Pages, served from the `gh-pages` branch root |
@@ -96,7 +96,9 @@ instances [{ label, condition, conditionNotes, status, price }]
 
 ## Browser-side editing (manage mode)
 
-There is an in-browser edit mode accessible via the floating **"Edit"** button (bottom-right, `position: fixed`, `zIndex: 530`). Tapping it, then tapping a card, opens the item detail panel with a `ManagePhotosPanel` section at the bottom.
+There is an in-browser edit mode accessible via the floating **"Edit"** button (bottom-right, `position: fixed`, `zIndex: 300`). Tapping it, then tapping a card, opens the item detail panel with a `ManagePhotosPanel` section at the bottom.
+
+**Layering note:** the detail drawer backdrop/panel sit at z-index `200`/`210` and the Edit FAB at `300`, all deliberately **below** Atlaskit's modal layer (blanket `500`, dialog `510`) so the photo **lightbox** (`@atlaskit/modal-dialog`) opens above the drawer. Keep any new fixed overlays under `500` unless they should cover the lightbox.
 
 ### Token
 - Requires a GitHub PAT with `repo` scope
@@ -137,11 +139,11 @@ All fields save together in a single `inventory.md` commit via `setInventoryCell
 | `src/data/inventory.generated.json` | Generated inventory snapshot the app imports (regenerated each deploy) |
 | `inventory.md` | Legacy table; only the dormant browser editor still writes to it |
 | `public/images/` | Product photos served as static assets (`airtable/` subdir is build-generated) |
-| `src/data/inventory.ts` | Imports `inventory.generated.json`, exports typed `Item[]` + helpers (`priceLabel`, `isSoldOut`, `polarisBadgeTone`) |
+| `src/data/inventory.ts` | Imports `inventory.generated.json`, exports typed `Item[]` + helpers (`priceLabel`, `isSoldOut`, `lozengeAppearance`) |
 | `src/data/github.ts` | GitHub API helpers for the dormant `inventory.md` editor |
 | `src/App.tsx` | Main app, filters (campus + gender), manage mode toggle (floating FAB) |
-| `src/components/ItemDetailPanel.tsx` | Full-screen (mobile) / right drawer (desktop ≥768px) detail view; merges `onItemPatched` into `current` state |
-| `src/components/ManagePhotosPanel.tsx` | Edit-mode panel: all editable fields + photo management; uses Polaris FormLayout, Thumbnail, Banner, ChoiceList, Select, icon buttons |
+| `src/components/ItemDetailPanel.tsx` | Full-screen (mobile) / right drawer (desktop ≥768px) detail view. Header = small downplayed official-photo thumbnail beside Title / Price+availability Lozenge / Size / Campus. Per-garment **instance cards** are the focus; tapping an instance (or the header thumbnail) opens an Atlaskit Modal **lightbox**. No overall Condition field (per-instance only — #52). Merges `onItemPatched` into `current` state. |
+| `src/components/ManagePhotosPanel.tsx` | Edit-mode panel: all editable fields + photo management; Atlaskit `Textfield`, `Select`, `Checkbox`, `SectionMessage`, `Spinner`, `IconButton` (icons from `@atlaskit/icon/core/*`) |
 | `src/components/ItemCard.tsx` | Grid card |
 | `src/components/PhotoGallery.tsx` | Swipeable image gallery in the detail view |
 | `src/components/GarmentThumbnail.tsx` | SVG placeholder when no photos |
@@ -175,7 +177,7 @@ After a series of commits (e.g. several edit-mode saves in a row), GitHub's seco
 - If GitHub MCP OAuth shows "Server Turned Down", the auth endpoint is broken on Anthropic's side — it's not a repo issue.
 - The old branch `claude/uniform-resale-app-NWrWF` exists remotely but is far behind `main` — do NOT use it. Always create a fresh branch from `main`.
 - When Vera tests on a PR preview and says "it's not saving" or "blank after save" — the preview reads the PR branch snapshot, but edit mode writes to `main`. This is expected. Instruct her to test persistence on the production site after merging.
-- The `@shopify/polaris-icons` package is available as a transitive dependency (installed by Polaris). Import icons like `ArrowUpIcon`, `ArrowDownIcon`, `DeleteIcon`, `PlusIcon` directly from `@shopify/polaris-icons` without adding it to `package.json`.
+- Icons come from `@atlaskit/icon` — import core glyphs by path, e.g. `import ArrowUpIcon from '@atlaskit/icon/core/arrow-up'` (also `arrow-down`, `delete`). The legacy `@atlaskit/icon/glyph/*` path is **not** bundled in this version; use `core/*`.
 - **Inventory is Airtable-backed now.** Edit listings in Airtable, not `inventory.md`. The browser "Edit" manage mode still works but writes to `inventory.md`, which each deploy **overwrites** from Airtable — so those edits are effectively temporary. Consider it deprecated.
 - The Airtable CDN (`*.airtableusercontent.com`) and API are firewalled from Claude's sandboxes, so `npm run build` / image downloads can't reach Airtable locally; only CI (GitHub-hosted runners) can. Verify data via the Airtable MCP and let CI do the real fetch.
-- Polaris `<Badge>` has no `subdued`/gray tone — pass `tone={undefined}` for it. Use `polarisBadgeTone()` from `inventory.ts` to map our `BadgeTone`.
+- Availability badges are Atlaskit `<Lozenge>`. Map our semantic `BadgeTone` with `lozengeAppearance()` from `inventory.ts`: success → `success` (green), attention → `moved` (amber), subdued → `default` (grey). Sold out uses `removed` (red).

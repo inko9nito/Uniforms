@@ -2,7 +2,7 @@ import generated from './inventory.generated.json';
 
 export type SchoolName = 'Carrollton' | 'Frisco';
 
-/** Polaris Badge tones we use for the availability badge. */
+/** Semantic tones we use for the availability badge (mapped to a Lozenge appearance). */
 export type BadgeTone = 'success' | 'attention' | 'subdued';
 
 export interface AvailabilityBadge {
@@ -100,12 +100,17 @@ function displayNameFor(section: string, name: string): string {
   return name;
 }
 
+/** Atlaskit <Lozenge> appearance values. */
+export type LozengeAppearance = 'default' | 'inprogress' | 'moved' | 'new' | 'removed' | 'success';
+
 /**
- * Polaris <Badge> has no "subdued" tone — its default (no tone) badge is the
- * gray one. Map our semantic tone onto what the component accepts.
+ * Map our semantic availability tone onto an Atlaskit Lozenge appearance:
+ * success → green, attention (reserved) → amber, subdued (sold out) → grey.
  */
-export function polarisBadgeTone(tone: BadgeTone): 'success' | 'attention' | undefined {
-  return tone === 'subdued' ? undefined : tone;
+export function lozengeAppearance(tone: BadgeTone): LozengeAppearance {
+  if (tone === 'success') return 'success';
+  if (tone === 'attention') return 'moved';
+  return 'default';
 }
 
 /** "$5" for a single price, "$3–$5" for a range. */
