@@ -1,22 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  Banner,
-  BlockStack,
-  Button,
-  ChoiceList,
-  Divider,
-  FormLayout,
-  InlineStack,
-  Link,
-  Select,
-  Spinner,
-  Text,
-  TextField,
-  Thumbnail,
-} from '@shopify/polaris';
-import { ArrowDownIcon, ArrowUpIcon, DeleteIcon } from '@shopify/polaris-icons';
+import { ArrowUp, ArrowDown, Trash2, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Button } from './ui/button';
+import { Select } from './ui/select';
 import type { Item, SchoolName } from '../data/inventory';
 import { resolveImage } from '../data/inventory';
+import { cn } from '../lib/utils';
 import {
   addImageToInventoryContent,
   COL,
@@ -44,10 +32,19 @@ type Status =
   | { type: 'done' };
 
 const GENDER_OPTIONS = ['Girls', 'Boys', 'Unisex'];
-const CAMPUS_CHOICES: { label: SchoolName; value: SchoolName }[] = [
-  { label: 'Carrollton', value: 'Carrollton' },
-  { label: 'Frisco', value: 'Frisco' },
-];
+const CAMPUS_CHOICES: SchoolName[] = ['Carrollton', 'Frisco'];
+
+const inputClass =
+  'h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm text-ink shadow-sm transition-colors placeholder:text-neutral-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 disabled:opacity-50';
+
+function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-xs font-bold uppercase tracking-wide text-ink-soft">{label}</span>
+      {children}
+    </label>
+  );
+}
 
 /** Serialize the selected campuses back to the inventory.md Schools cell. */
 function formatSchools(selected: string[]): string {
@@ -104,9 +101,10 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
 
   // Gender options always include the item's current section, even if it's
   // something custom (e.g. "Other") that isn't in the standard list.
-  const genderOptions = GENDER_OPTIONS.includes(item.section)
+  const genderNames = GENDER_OPTIONS.includes(item.section)
     ? GENDER_OPTIONS
     : [item.section, ...GENDER_OPTIONS];
+  const genderOptions = genderNames.map((g) => ({ label: g, value: g }));
 
   function handleSaveToken() {
     const t = tokenDraft.trim();
@@ -114,6 +112,12 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
     setToken(t);
     setTokenDraft('');
     setShowTokenInput(false);
+  }
+
+  function toggleCampus(name: SchoolName, checked: boolean) {
+    setCampusDraft((prev) =>
+      checked ? [...new Set([...prev, name])] : prev.filter((c) => c !== name),
+    );
   }
 
   /** Fetch inventory.md, apply a transform, and commit it back. */
@@ -244,10 +248,7 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
     onItemPatched({ images: next }); // optimistic
     try {
       setStatus({ type: 'busy', msg: 'Saving photos…' });
-      await patchInventory(
-        (content) => setInventoryImages(content, item.sourceLine, next),
-        message,
-      );
+      await patchInventory((content) => setInventoryImages(content, item.sourceLine, next), message);
       setStatus({ type: 'done' });
     } catch (err) {
       setImages(prev);
@@ -258,17 +259,14 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
 
   function handleRemovePhoto(src: string) {
     if (!hasToken) return;
-    commitImageOrder(
-      images.filter((s) => s !== src),
-      `Remove photo from ${item.displayName}`,
-    );
+    commitImageOrder(images.filter((s) => s !== src), `Remove photo from ${item.displayName}`);
   }
 
   function handleMove(index: number, dir: -1 | 1) {
     const target = index + dir;
     if (target < 0 || target >= images.length) return;
     const next = [...images];
-    [next[index], next[target]] = [next[target], next[index]];
+    [next[index], next[target]] = [next[target]!, next[index]!];
     commitImageOrder(next, `Reorder photos for ${item.displayName}`);
   }
 
@@ -283,270 +281,262 @@ export function ManagePhotosPanel({ item, onItemPatched }: Props) {
     linkDraft.trim() !== (item.sourceUrl ?? '');
 
   return (
-    <BlockStack gap="400">
+    <div className="flex flex-col gap-4">
       {/* Token setup */}
       {!hasToken && !showTokenInput && (
-        <Banner tone="warning">
-          <BlockStack gap="200">
-            <Text as="p" variant="bodySm">
-              A GitHub token is required to save changes.
-            </Text>
-            <InlineStack>
-              <Button size="slim" onClick={() => setShowTokenInput(true)}>
-                Set up token
-              </Button>
-            </InlineStack>
-          </BlockStack>
-        </Banner>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <p className="text-sm text-amber-900">A GitHub token is required to save changes.</p>
+          <div className="mt-2">
+            <Button size="sm" variant="secondary" onClick={() => setShowTokenInput(true)}>
+              Set up token
+            </Button>
+          </div>
+        </div>
       )}
 
       {showTokenInput && (
-        <BlockStack gap="200">
-          <Text as="p" variant="bodySm" tone="subdued">
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-ink-soft">
             Create a{' '}
-            <Link
-              url="https://github.com/settings/tokens/new?description=FCA+Uniform+Resale&scopes=repo"
+            <a
+              href="https://github.com/settings/tokens/new?description=FCA+Uniform+Resale&scopes=repo"
               target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-brand hover:underline"
             >
               GitHub personal access token
-            </Link>{' '}
+            </a>{' '}
             with <strong>repo</strong> scope. Stored only in this browser.
-          </Text>
-          <TextField
-            label="GitHub token"
-            value={tokenDraft}
-            onChange={setTokenDraft}
-            type="password"
-            autoComplete="off"
-            placeholder="ghp_…"
-            connectedRight={
-              <Button onClick={handleSaveToken} disabled={!tokenDraft.trim()}>
-                Save
-              </Button>
-            }
-          />
-          <InlineStack>
-            <Button
-              variant="plain"
-              size="slim"
-              onClick={() => {
-                setShowTokenInput(false);
-                setTokenDraft('');
-              }}
-            >
-              Cancel
+          </p>
+          <div className="flex gap-2">
+            <input
+              className={inputClass}
+              value={tokenDraft}
+              onChange={(e) => setTokenDraft(e.target.value)}
+              type="password"
+              placeholder="ghp_…"
+            />
+            <Button size="md" onClick={handleSaveToken} disabled={!tokenDraft.trim()}>
+              Save
             </Button>
-          </InlineStack>
-        </BlockStack>
-      )}
-
-      {hasToken && !showTokenInput && (
-        <InlineStack align="end">
-          <Button
-            variant="plain"
-            size="slim"
+          </div>
+          <button
+            type="button"
+            className="self-start text-sm font-semibold text-ink-soft hover:underline"
             onClick={() => {
-              setShowTokenInput(true);
+              setShowTokenInput(false);
               setTokenDraft('');
             }}
           >
-            Change token
-          </Button>
-        </InlineStack>
+            Cancel
+          </button>
+        </div>
       )}
 
-      {/* Details: title, gender, campus, size, condition, price, qty */}
+      {hasToken && !showTokenInput && (
+        <button
+          type="button"
+          className="self-end text-sm font-semibold text-ink-soft hover:underline"
+          onClick={() => {
+            setShowTokenInput(true);
+            setTokenDraft('');
+          }}
+        >
+          Change token
+        </button>
+      )}
+
+      {/* Details */}
       {hasToken && (
-        <BlockStack gap="300">
-          <FormLayout>
-            <TextField
-              label="Title"
-              value={titleDraft}
-              onChange={setTitleDraft}
-              autoComplete="off"
-              disabled={busy}
-            />
-            <FormLayout.Group>
+        <div className="flex flex-col gap-3">
+          <Labeled label="Title">
+            <input className={inputClass} value={titleDraft} onChange={(e) => setTitleDraft(e.target.value)} disabled={busy} />
+          </Labeled>
+          <div className="grid grid-cols-2 gap-3">
+            <Labeled label="Gender">
               <Select
-                label="Gender"
-                options={genderOptions}
                 value={genderDraft}
-                onChange={setGenderDraft}
+                onValueChange={setGenderDraft}
+                options={genderOptions}
                 disabled={busy}
+                ariaLabel="Gender"
               />
-              <TextField
-                label="Size"
-                value={sizeDraft}
-                onChange={setSizeDraft}
-                autoComplete="off"
-                disabled={busy}
-              />
-            </FormLayout.Group>
-            <FormLayout.Group>
-              <TextField
-                label="Price"
-                type="number"
-                min={0}
-                prefix="$"
-                value={priceDraft}
-                onChange={setPriceDraft}
-                autoComplete="off"
-                disabled={busy}
-              />
-              <TextField
-                label="Qty"
+            </Labeled>
+            <Labeled label="Size">
+              <input className={inputClass} value={sizeDraft} onChange={(e) => setSizeDraft(e.target.value)} disabled={busy} />
+            </Labeled>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Labeled label="Price">
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-soft">$</span>
+                <input
+                  className={cn(inputClass, 'pl-7')}
+                  type="number"
+                  min={0}
+                  value={priceDraft}
+                  onChange={(e) => setPriceDraft(e.target.value)}
+                  disabled={busy}
+                />
+              </div>
+            </Labeled>
+            <Labeled label="Qty">
+              <input
+                className={inputClass}
                 type="number"
                 min={0}
                 value={qtyDraft}
-                onChange={setQtyDraft}
-                autoComplete="off"
+                onChange={(e) => setQtyDraft(e.target.value)}
                 disabled={busy}
               />
-            </FormLayout.Group>
-            <TextField
-              label="Condition"
+            </Labeled>
+          </div>
+          <Labeled label="Condition">
+            <input
+              className={inputClass}
               value={conditionDraft}
-              onChange={setConditionDraft}
-              autoComplete="off"
+              onChange={(e) => setConditionDraft(e.target.value)}
               disabled={busy}
               placeholder="e.g. Brand new with tags"
             />
-            <TextField
-              label="Original product URL"
+          </Labeled>
+          <Labeled label="Original product URL">
+            <input
+              className={inputClass}
               type="url"
               value={linkDraft}
-              onChange={setLinkDraft}
-              autoComplete="off"
+              onChange={(e) => setLinkDraft(e.target.value)}
               disabled={busy}
               placeholder="https://store.example.com/…"
-              helpText="Link to the original store listing (optional)"
             />
-            <ChoiceList
-              allowMultiple
-              title="Campus"
-              choices={CAMPUS_CHOICES}
-              selected={campusDraft}
-              onChange={setCampusDraft}
-              disabled={busy}
-            />
-          </FormLayout>
-          <InlineStack>
-            <Button onClick={handleSaveDetails} disabled={busy || !detailsDirty} size="slim">
+          </Labeled>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wide text-ink-soft">Campus</span>
+            <div className="flex gap-4">
+              {CAMPUS_CHOICES.map((name) => (
+                <label key={name} className="flex items-center gap-2 text-sm font-medium text-ink">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-brand"
+                    checked={campusDraft.includes(name)}
+                    onChange={(e) => toggleCampus(name, e.target.checked)}
+                    disabled={busy}
+                  />
+                  {name}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <Button size="sm" onClick={handleSaveDetails} disabled={busy || !detailsDirty}>
               Save details
             </Button>
-          </InlineStack>
-        </BlockStack>
+          </div>
+        </div>
       )}
 
-      <Divider />
+      <hr className="border-neutral-200" />
 
       {/* Photos */}
-      <BlockStack gap="300">
-        <Text variant="headingSm" as="h3">
-          Photos
-        </Text>
+      <div className="flex flex-col gap-3">
+        <h3 className="text-sm font-extrabold text-ink">Photos</h3>
 
-        {images.length === 0 && (
-          <Text as="p" variant="bodySm" tone="subdued">
-            No photos yet.
-          </Text>
-        )}
+        {images.length === 0 && <p className="text-sm text-ink-soft">No photos yet.</p>}
 
-        <BlockStack gap="200">
+        <div className="flex flex-col gap-2">
           {images.map((src, i) => (
-            <InlineStack key={src} gap="300" blockAlign="center" wrap={false}>
-              <Thumbnail source={resolveImage(src)} alt="" size="small" />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <Text as="span" variant="bodySm" tone="subdued" breakWord>
-                  {src.length > 36 ? `…${src.slice(-30)}` : src}
-                </Text>
-              </div>
-              <InlineStack gap="050" wrap={false}>
+            <div key={src} className="flex items-center gap-3">
+              <img
+                src={resolveImage(src)}
+                alt=""
+                className="h-10 w-10 flex-none rounded-lg border border-neutral-200 object-cover"
+              />
+              <span className="min-w-0 flex-1 truncate text-xs text-ink-soft">
+                {src.length > 36 ? `…${src.slice(-30)}` : src}
+              </span>
+              <div className="flex gap-1">
                 <Button
-                  icon={ArrowUpIcon}
-                  variant="tertiary"
-                  size="slim"
-                  accessibilityLabel="Move photo up"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Move photo up"
                   disabled={busy || !hasToken || i === 0}
                   onClick={() => handleMove(i, -1)}
-                />
+                >
+                  <ArrowUp size={16} />
+                </Button>
                 <Button
-                  icon={ArrowDownIcon}
-                  variant="tertiary"
-                  size="slim"
-                  accessibilityLabel="Move photo down"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Move photo down"
                   disabled={busy || !hasToken || i === images.length - 1}
                   onClick={() => handleMove(i, 1)}
-                />
+                >
+                  <ArrowDown size={16} />
+                </Button>
                 <Button
-                  icon={DeleteIcon}
-                  variant="tertiary"
-                  tone="critical"
-                  size="slim"
-                  accessibilityLabel="Remove photo"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Remove photo"
+                  className="text-red-600 hover:bg-red-50"
                   disabled={busy || !hasToken}
                   onClick={() => handleRemovePhoto(src)}
-                />
-              </InlineStack>
-            </InlineStack>
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            </div>
           ))}
-        </BlockStack>
+        </div>
 
         {hasToken && (
-          <BlockStack gap="200">
+          <div className="flex flex-col gap-2">
             <input
               ref={fileRef}
               type="file"
               accept="image/*"
-              style={{ display: 'none' }}
+              className="hidden"
               onChange={handleFileChange}
             />
-            <InlineStack>
-              <Button onClick={() => fileRef.current?.click()} disabled={busy} size="slim">
+            <div>
+              <Button size="sm" variant="secondary" onClick={() => fileRef.current?.click()} disabled={busy}>
                 Upload photo from device
               </Button>
-            </InlineStack>
-            <TextField
-              label="Add from URL"
-              labelHidden
-              value={urlDraft}
-              onChange={setUrlDraft}
-              placeholder="Or paste an image URL…"
-              autoComplete="off"
-              disabled={busy}
-              connectedRight={
-                <Button onClick={handleAddUrl} disabled={busy || !urlDraft.trim()}>
-                  Add
-                </Button>
-              }
-            />
-          </BlockStack>
+            </div>
+            <div className="flex gap-2">
+              <input
+                className={inputClass}
+                value={urlDraft}
+                onChange={(e) => setUrlDraft(e.target.value)}
+                placeholder="Or paste an image URL…"
+                disabled={busy}
+              />
+              <Button size="md" onClick={handleAddUrl} disabled={busy || !urlDraft.trim()}>
+                Add
+              </Button>
+            </div>
+          </div>
         )}
-      </BlockStack>
+      </div>
 
       {/* Status feedback */}
       {status.type === 'busy' && (
-        <InlineStack gap="200" blockAlign="center">
-          <Spinner size="small" />
-          <Text as="span" variant="bodySm" tone="subdued">
-            {status.msg}
-          </Text>
-        </InlineStack>
+        <div className="flex items-center gap-2 text-sm text-ink-soft">
+          <Loader2 size={16} className="animate-spin" />
+          {status.msg}
+        </div>
       )}
       {status.type === 'error' && (
-        <Banner tone="critical" onDismiss={() => setStatus({ type: 'idle' })}>
-          <Text as="p" variant="bodySm">
-            {status.msg}
-          </Text>
-        </Banner>
+        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <AlertCircle size={16} className="mt-0.5 flex-none" />
+          <span>{status.msg}</span>
+        </div>
       )}
       {status.type === 'done' && (
-        <Banner tone="success" onDismiss={() => setStatus({ type: 'idle' })}>
-          <Text as="p" variant="bodySm">
-            Saved — the site will rebuild in ~1 minute.
-          </Text>
-        </Banner>
+        <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+          <CheckCircle2 size={16} className="flex-none" />
+          Saved — the site will rebuild in ~1 minute.
+        </div>
       )}
-    </BlockStack>
+    </div>
   );
 }
