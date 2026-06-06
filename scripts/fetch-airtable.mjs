@@ -160,14 +160,14 @@ export function buildProducts(products, instances) {
         conditionNotes: text(k.fields[F.instConditionNotes]) || undefined,
         status: selName(k.fields[F.instStatus]) ?? '',
         price: asNumber(k.fields[F.instPrice]),
+        // Temp fields consumed in generate(); stripped before write.
+        _id: k.id,
+        _atts: Array.isArray(k.fields[F.instPhoto]) ? k.fields[F.instPhoto] : [],
       }));
 
-    // Gallery: official product photos first, then real photos of the
-    // individual (non-sold) garments.
+    // The top gallery shows only the official product photo(s); each
+    // individual garment's own photo rides on its instance (see generate()).
     const productAtts = Array.isArray(f[F.photo]) ? f[F.photo] : [];
-    const instanceAtts = nonSold.flatMap((k) =>
-      Array.isArray(k.fields[F.instPhoto]) ? k.fields[F.instPhoto] : [],
-    );
 
     rows.push({
       id: product.id,
@@ -185,7 +185,7 @@ export function buildProducts(products, instances) {
       images: [],
       sourceUrl: text(f[F.link]) || undefined,
       instances: instanceList,
-      _atts: [...productAtts, ...instanceAtts],
+      _atts: productAtts,
     });
   }
 
@@ -238,11 +238,26 @@ export async function generate(products, instances) {
       try {
         images.push(await downloadImage(row._atts[i], `${row.id}-${i}`));
       } catch (err) {
-        console.warn(`  ! skipped an image for ${row.name}: ${err.message}`);
+        console.warn(`  ! skipped a product image for ${row.name}: ${err.message}`);
       }
     }
     row.images = images;
     delete row._atts;
+
+    // Each instance keeps its own "Actual photo" (the real garment), shown on
+    // its card in the detail panel.
+    for (const inst of row.instances) {
+      const atts = inst._atts ?? [];
+      if (atts.length) {
+        try {
+          inst.image = await downloadImage(atts[0], `${inst._id}-0`);
+        } catch (err) {
+          console.warn(`  ! skipped an instance image for ${inst.label}: ${err.message}`);
+        }
+      }
+      delete inst._atts;
+      delete inst._id;
+    }
   }
 
   await mkdir(path.dirname(OUT_JSON), { recursive: true });

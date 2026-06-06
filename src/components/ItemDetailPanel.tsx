@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Badge, BlockStack, Box, Button, Divider, InlineStack, Text } from '@shopify/polaris';
-import { isSoldOut, polarisBadgeTone, priceLabel, type Item } from '../data/inventory';
+import { isSoldOut, polarisBadgeTone, priceLabel, resolveImage, type Item } from '../data/inventory';
 import { GarmentThumbnail } from './GarmentThumbnail';
 import { PhotoGallery } from './PhotoGallery';
 import { ManagePhotosPanel } from './ManagePhotosPanel';
@@ -25,6 +25,13 @@ function colorFor(name: string): { hex: string; label: string } | null {
 function statusTone(status: string): 'success' | 'attention' | undefined {
   if (status === 'Available') return 'success';
   if (status === 'Reserved') return 'attention';
+  return undefined;
+}
+
+function conditionTone(condition: string): 'success' | 'attention' | undefined {
+  const c = condition.toLowerCase();
+  if (c.includes('blemish') || c.includes('fair')) return 'attention';
+  if (c) return 'success'; // New with/without tags, Good
   return undefined;
 }
 
@@ -90,13 +97,9 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
 
   const soldOut = current ? isSoldOut(current) : false;
   const color = current ? colorFor(current.name) : null;
-  // Show the per-garment breakdown only when it adds information beyond the
-  // summary above (multiple pieces, a reserved/sold piece, or a flaw note).
-  const showInstances =
-    !!current &&
-    current.instances.length > 0 &&
-    (current.instances.length > 1 ||
-      current.instances.some((i) => i.conditionNotes || i.status !== 'Available'));
+  // Each physical garment in the listing (Sold ones are hidden), shown as its
+  // own card — mirrors the "Available items" section in the Airtable interface.
+  const visibleInstances = current ? current.instances.filter((i) => i.status !== 'Sold') : [];
 
   return (
     <>
@@ -266,55 +269,99 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
                     </div>
                     <Text as="span">{current.size}</Text>
                   </InlineStack>
-                  <InlineStack gap="400" blockAlign="center">
-                    <div style={{ width: 80, flexShrink: 0 }}>
-                      <Text as="span" tone="subdued">Condition</Text>
-                    </div>
-                    {current.note ? (
-                      <Text as="span" tone="caution">{current.note}</Text>
-                    ) : (
-                      <Text as="span">Good</Text>
-                    )}
-                  </InlineStack>
+                  {visibleInstances.length === 0 && (
+                    <InlineStack gap="400" blockAlign="center">
+                      <div style={{ width: 80, flexShrink: 0 }}>
+                        <Text as="span" tone="subdued">Condition</Text>
+                      </div>
+                      {current.note ? (
+                        <Text as="span" tone="caution">{current.note}</Text>
+                      ) : (
+                        <Text as="span">Good</Text>
+                      )}
+                    </InlineStack>
+                  )}
                 </BlockStack>
 
-                {showInstances && (
+                {visibleInstances.length > 0 && (
                   <>
                     <Divider />
-                    <BlockStack gap="200">
+                    <BlockStack gap="300">
                       <Text variant="headingSm" as="h2">
-                        {`This listing has ${current.instances.length} ${
-                          current.instances.length === 1 ? 'item' : 'items'
-                        }`}
+                        {`Available items (${visibleInstances.length})`}
                       </Text>
-                      {current.instances.map((inst) => (
-                        <Box
-                          key={inst.label}
-                          borderColor="border"
-                          borderWidth="025"
-                          borderRadius="200"
-                          padding="300"
-                        >
-                          <InlineStack align="space-between" blockAlign="center" gap="200">
-                            <BlockStack gap="050">
-                              <Text as="span" variant="bodyMd" fontWeight="semibold">
-                                {inst.condition || '—'}
-                              </Text>
-                              {inst.conditionNotes && (
-                                <Text as="span" variant="bodySm" tone="subdued">
-                                  {inst.conditionNotes}
-                                </Text>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                          gap: 12,
+                        }}
+                      >
+                        {visibleInstances.map((inst) => (
+                          <div
+                            key={inst.label}
+                            style={{
+                              border: '1px solid #e3e5e7',
+                              borderRadius: 12,
+                              overflow: 'hidden',
+                              background: '#fff',
+                              display: 'flex',
+                              flexDirection: 'column',
+                            }}
+                          >
+                            <div style={{ height: 150, overflow: 'hidden', background: '#f6f6f7' }}>
+                              {inst.image ? (
+                                <div
+                                  style={{
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 8,
+                                    boxSizing: 'border-box',
+                                  }}
+                                >
+                                  <img
+                                    src={resolveImage(inst.image)}
+                                    alt={inst.label}
+                                    loading="lazy"
+                                    style={{
+                                      maxHeight: '100%',
+                                      maxWidth: '100%',
+                                      objectFit: 'contain',
+                                      display: 'block',
+                                    }}
+                                  />
+                                </div>
+                              ) : (
+                                <GarmentThumbnail item={current} />
                               )}
-                            </BlockStack>
-                            <InlineStack gap="200" blockAlign="center">
-                              {inst.price != null && (
-                                <Text as="span" variant="bodyMd">{`$${inst.price}`}</Text>
-                              )}
-                              <Badge tone={statusTone(inst.status)}>{inst.status}</Badge>
-                            </InlineStack>
-                          </InlineStack>
-                        </Box>
-                      ))}
+                            </div>
+                            <Box padding="300">
+                              <BlockStack gap="150">
+                                {inst.price != null && (
+                                  <Text variant="headingSm" as="p">{`$${inst.price.toFixed(2)}`}</Text>
+                                )}
+                                {inst.condition && (
+                                  <InlineStack>
+                                    <Badge tone={conditionTone(inst.condition)}>
+                                      {inst.condition}
+                                    </Badge>
+                                  </InlineStack>
+                                )}
+                                {inst.conditionNotes && (
+                                  <Text as="span" variant="bodySm" tone="subdued">
+                                    {inst.conditionNotes}
+                                  </Text>
+                                )}
+                                <InlineStack>
+                                  <Badge tone={statusTone(inst.status)}>{inst.status}</Badge>
+                                </InlineStack>
+                              </BlockStack>
+                            </Box>
+                          </div>
+                        ))}
+                      </div>
                     </BlockStack>
                   </>
                 )}

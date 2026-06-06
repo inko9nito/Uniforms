@@ -21,6 +21,8 @@ export interface Instance {
   status: 'Available' | 'Reserved' | 'Sold' | string;
   /** Per-item price; null only if Airtable left it blank. */
   price: number | null;
+  /** Photo of this specific garment ("Actual photo"), if one was uploaded. */
+  image?: string;
 }
 
 export interface Item {
