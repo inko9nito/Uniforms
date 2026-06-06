@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Refresh the live site from Airtable a few times a day so availability
+    # and prices stay current without a manual push.
+    - cron: '0 */6 * * *'
 
 # Needs write access to push the built site to the gh-pages branch.
 permissions:
@@ -24,6 +28,15 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+
+      # Pull the latest inventory from Airtable into
+      # src/data/inventory.generated.json and download its photos. The token
+      # lives only in Actions secrets, so it never reaches the browser bundle.
+      - name: Sync inventory from Airtable
+        env:
+          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+        run: node scripts/fetch-airtable.mjs
+
       - run: npm run build
 
       # Publish the production build to the ROOT of the gh-pages branch.
