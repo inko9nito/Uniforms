@@ -35,13 +35,11 @@ export interface Item {
   schools: SchoolName[];
   /** Short condition summary for the card (distinct conditions across instances). */
   note?: string;
-  /** Lowest available instance price. Kept as `unitPrice` for back-compat. */
-  unitPrice: number;
   priceMin: number;
   priceMax: number;
   /** Airtable's pre-formatted range string, e.g. "$3–$5". */
   priceDisplay?: string;
-  /** Count of buyable instances. 0 means none available right now. Aliased as `quantity`. */
+  /** Count of buyable instances available right now. */
   quantity: number;
   availableCount: number;
   reservedCount: number;
@@ -51,8 +49,6 @@ export interface Item {
   images: string[];
   /** Optional link to the original store listing where the item was bought. */
   sourceUrl?: string;
-  /** Retained for the (now dormant) GitHub editor; 0 since data comes from Airtable. */
-  sourceLine: number;
   /** Per-garment breakdown, sorted available → reserved → sold. */
   instances: Instance[];
 }
@@ -80,18 +76,6 @@ interface GeneratedProduct {
 export function resolveImage(src: string): string {
   if (/^https?:\/\//.test(src)) return src;
   return import.meta.env.BASE_URL + src.replace(/^\/+/, '');
-}
-
-/** GitHub repo coordinates, used to build "edit on GitHub" links. */
-export const REPO_OWNER = 'inko9nito';
-export const REPO_NAME = 'Uniforms';
-export const REPO_BRANCH = 'main';
-export const INVENTORY_PATH = 'inventory.md';
-
-export const EDIT_INVENTORY_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/edit/${REPO_BRANCH}/${INVENTORY_PATH}`;
-
-export function editLineUrl(line: number): string {
-  return `${EDIT_INVENTORY_URL}#L${line}`;
 }
 
 /** Girls/Boys items get a section prefix; Unisex (and anything else) keep their plain name. */
@@ -126,9 +110,7 @@ function toItem(p: GeneratedProduct): Item {
   return {
     ...p,
     displayName: displayNameFor(p.section, p.name),
-    unitPrice: p.priceMin,
     quantity: p.availableCount,
-    sourceLine: 0,
   };
 }
 
