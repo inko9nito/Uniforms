@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+
+/* Design tokens for the consumer-grade "Shop app" look: friendly geometric
+   sans, soft off-white page, near-black ink, and a single violet brand accent. */
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  --color-page: #f4f4f6;
+  --color-ink: #15161a;
+  --color-ink-soft: #5b5d66;
+  --color-brand: #5b3df5;
+  --color-brand-soft: #efecfe;
+
+  --radius-card: 1.25rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: var(--color-page);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  * {
+    box-sizing: border-box;
+  }
+}

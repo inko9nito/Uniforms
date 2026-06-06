@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 // Relative base so the build works both at the Pages root
 // (https://<user>.github.io/Uniforms/) and inside PR-preview
@@ -8,5 +9,5 @@ import react from '@vitejs/plugin-react';
 // page is served.
 export default defineConfig({
   base: './',
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
 });

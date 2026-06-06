@@ -1,9 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import { Badge, BlockStack, Box, Button, Divider, InlineStack, Text } from '@shopify/polaris';
-import { isSoldOut, polarisBadgeTone, priceLabel, resolveImage, type Item } from '../data/inventory';
+import { ChevronLeft, ExternalLink, X, ZoomIn } from 'lucide-react';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Card } from './ui/card';
+import { Dialog, DialogContent } from './ui/dialog';
+import {
+  badgeVariant,
+  isSoldOut,
+  priceLabel,
+  resolveImage,
+  type BadgeVariant,
+  type Instance,
+  type Item,
+} from '../data/inventory';
 import { GarmentThumbnail } from './GarmentThumbnail';
 import { PhotoGallery } from './PhotoGallery';
 import { ManagePhotosPanel } from './ManagePhotosPanel';
+import { cn } from '../lib/utils';
 
 interface Props {
   item: Item | null;
@@ -12,32 +25,80 @@ interface Props {
   manageMode: boolean;
 }
 
-function colorFor(name: string): { hex: string; label: string } | null {
-  const n = name.toLowerCase();
-  if (n.includes('navy')) return { hex: '#26344f', label: 'Navy' };
-  if (n.includes('gray') || n.includes('grey')) return { hex: '#a8aeb8', label: 'Gray' };
-  if (n.includes('white')) return { hex: '#eef0f3', label: 'White' };
-  if (n.includes('khaki')) return { hex: '#ccbb98', label: 'Khaki' };
-  if (n.includes('black')) return { hex: '#1a1a1a', label: 'Black' };
-  return null;
+interface Lightbox {
+  images: string[];
+  alt: string;
 }
 
-function statusTone(status: string): 'success' | 'attention' | undefined {
+function statusVariant(status: string): BadgeVariant {
   if (status === 'Available') return 'success';
-  if (status === 'Reserved') return 'attention';
-  return undefined;
+  if (status === 'Reserved') return 'warning';
+  return 'neutral';
 }
 
-function conditionTone(condition: string): 'success' | 'attention' | undefined {
+function conditionVariant(condition: string): BadgeVariant {
   const c = condition.toLowerCase();
-  if (c.includes('blemish') || c.includes('fair')) return 'attention';
+  if (c.includes('blemish') || c.includes('fair')) return 'warning';
   if (c) return 'success'; // New with/without tags, Good
-  return undefined;
+  return 'neutral';
+}
+
+/** A single physical-garment card; its photo opens the lightbox when present. */
+function InstanceCard({
+  inst,
+  item,
+  onZoom,
+}: {
+  inst: Instance;
+  item: Item;
+  onZoom: (lb: Lightbox) => void;
+}) {
+  const zoomable = !!inst.image;
+  return (
+    <Card className="flex flex-col overflow-hidden">
+      <button
+        type="button"
+        onClick={zoomable ? () => onZoom({ images: [inst.image!], alt: inst.label }) : undefined}
+        aria-label={zoomable ? `Enlarge photo of ${inst.label}` : undefined}
+        className={cn(
+          'group relative block aspect-square w-full overflow-hidden bg-neutral-50',
+          zoomable ? 'cursor-zoom-in' : 'cursor-default',
+        )}
+      >
+        {inst.image ? (
+          <>
+            <img
+              src={resolveImage(inst.image)}
+              alt={inst.label}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+            <span className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-white/85 text-ink opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+              <ZoomIn size={15} />
+            </span>
+          </>
+        ) : (
+          <GarmentThumbnail item={item} />
+        )}
+      </button>
+      <div className="flex flex-col gap-2 p-3">
+        {inst.price != null && (
+          <p className="text-lg font-extrabold text-ink">{`$${inst.price.toFixed(2)}`}</p>
+        )}
+        <div className="flex flex-wrap gap-1.5">
+          {inst.condition && <Badge variant={conditionVariant(inst.condition)}>{inst.condition}</Badge>}
+          <Badge variant={statusVariant(inst.status)}>{inst.status}</Badge>
+        </div>
+        {inst.conditionNotes && <p className="text-xs text-ink-soft">{inst.conditionNotes}</p>}
+      </div>
+    </Card>
+  );
 }
 
 export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Props) {
   const open = item !== null;
   const [current, setCurrent] = useState<Item | null>(item);
+  const [lightbox, setLightbox] = useState<Lightbox | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -96,10 +157,10 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
   };
 
   const soldOut = current ? isSoldOut(current) : false;
-  const color = current ? colorFor(current.name) : null;
   // Each physical garment in the listing (Sold ones are hidden), shown as its
-  // own card — mirrors the "Available items" section in the Airtable interface.
+  // own card — the photos buyers actually care about.
   const visibleInstances = current ? current.instances.filter((i) => i.status !== 'Sold') : [];
+  const hasOfficialPhotos = !!current && current.images.length > 0;
 
   return (
     <>
@@ -107,306 +168,161 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
       <div
         onClick={onClose}
         aria-hidden
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 519,
-          background: 'rgba(0,0,0,0.4)',
-          opacity: open ? 1 : 0,
-          transition: 'opacity 0.32s ease',
-          pointerEvents: open ? 'auto' : 'none',
-          display: isDesktop ? 'block' : 'none',
-        }}
+        className={cn(
+          'fixed inset-0 z-30 hidden bg-black/40 transition-opacity duration-300 md:block',
+          open ? 'opacity-100' : 'pointer-events-none opacity-0',
+        )}
       />
 
       <div
         ref={panelRef}
         aria-hidden={!open}
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: isDesktop ? 'auto' : 0,
-          width: isDesktop ? 'min(480px, 100vw)' : 'auto',
-          zIndex: 520,
-          background: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          transform: open ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.32s cubic-bezier(0.32, 0.72, 0, 1)',
-          boxShadow: open ? '-8px 0 24px rgba(0,0,0,0.12)' : 'none',
-          pointerEvents: open ? 'auto' : 'none',
-        }}
+        className={cn(
+          'fixed inset-y-0 right-0 z-40 flex w-full flex-col bg-page shadow-[-8px_0_24px_rgba(0,0,0,0.12)] transition-transform duration-300 md:w-[min(480px,100vw)]',
+          open ? 'translate-x-0' : 'pointer-events-none translate-x-full',
+        )}
+        style={{ transitionTimingFunction: 'cubic-bezier(0.32,0.72,0,1)' }}
       >
         {/* Close button fixed to the panel so it doesn't scroll away.
             Chevron (back) on mobile, X (close) on desktop. */}
         <button
           onClick={onClose}
           aria-label={isDesktop ? 'Close' : 'Go back'}
-          style={{
-            position: 'absolute',
-            top: 12,
-            left: 12,
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            background: 'rgba(255,255,255,0.92)',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 1px 6px rgba(0,0,0,0.18)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 2,
-          }}
+          className="absolute left-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-ink shadow-md backdrop-blur transition-colors hover:bg-white"
         >
-          {isDesktop ? (
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
-              <path
-                d="M5 5L15 15M15 5L5 15"
-                stroke="#303030"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
-              <path
-                d="M12 4L6 10L12 16"
-                stroke="#303030"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          )}
+          {isDesktop ? <X size={19} strokeWidth={2.2} /> : <ChevronLeft size={20} strokeWidth={2.2} />}
         </button>
 
-      {/* Scrollable content */}
-      <div
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingTop: 60 }}
-      >
-        {current && (
-          <>
-            {/* Full-bleed image area */}
-            <div
-              style={{
-                position: 'relative',
-                height: 'min(48vh, 400px)',
-                minHeight: 260,
-                background: '#fff',
-                flexShrink: 0,
-              }}
-            >
-              {current.images.length > 0 ? (
-                <PhotoGallery images={current.images} alt={current.displayName} />
-              ) : (
-                <GarmentThumbnail item={current} />
-              )}
-            </div>
-
-            {/* Product info */}
-            <Box padding="400">
-              <BlockStack gap="300">
-                <Text variant="headingXl" as="h1">
-                  {current.displayName}
-                </Text>
-
-                {/* Price + availability badge inline */}
-                <InlineStack gap="300" blockAlign="center">
-                  <Text variant="heading2xl" as="p">
-                    {priceLabel(current)}
-                  </Text>
-                  {soldOut ? (
-                    <Badge tone="critical">Sold out</Badge>
+        {/* Scrollable content */}
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className="flex-1 overflow-y-auto px-4 pb-6 pt-16 [-webkit-overflow-scrolling:touch]"
+        >
+          {current && (
+            <div className="flex flex-col gap-4">
+              {/* Header: small, downplayed official photo beside the key facts */}
+              <Card className="flex gap-4 p-4">
+                <button
+                  type="button"
+                  onClick={
+                    hasOfficialPhotos
+                      ? () => setLightbox({ images: current.images, alt: current.displayName })
+                      : undefined
+                  }
+                  aria-label={hasOfficialPhotos ? 'Enlarge product photo' : undefined}
+                  className={cn(
+                    'h-24 w-24 flex-none overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-50',
+                    hasOfficialPhotos ? 'cursor-zoom-in' : 'cursor-default',
+                  )}
+                >
+                  {hasOfficialPhotos ? (
+                    <img
+                      src={resolveImage(current.images[0]!)}
+                      alt={current.displayName}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
-                    <Badge tone={polarisBadgeTone(current.badge.tone)}>{current.badge.label}</Badge>
+                    <GarmentThumbnail item={current} />
                   )}
-                </InlineStack>
+                </button>
 
-                <Divider />
-
-                {/* Properties */}
-                <BlockStack gap="300">
-                  <InlineStack gap="400" blockAlign="center">
-                    <div style={{ width: 80, flexShrink: 0 }}>
-                      <Text as="span" tone="subdued">Campus</Text>
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-lg font-extrabold leading-tight text-ink">
+                    {current.displayName}
+                  </h1>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className="text-2xl font-extrabold text-ink">{priceLabel(current)}</span>
+                    {soldOut ? (
+                      <Badge variant="danger">Sold out</Badge>
+                    ) : (
+                      <Badge variant={badgeVariant(current.badge.tone)}>{current.badge.label}</Badge>
+                    )}
+                  </div>
+                  <dl className="mt-2.5 space-y-1 text-sm">
+                    <div className="flex gap-2">
+                      <dt className="w-14 flex-none font-medium text-ink-soft">Size</dt>
+                      <dd className="font-semibold text-ink">{current.size}</dd>
                     </div>
-                    <InlineStack gap="150">
-                      {current.schools.map((s) => (
-                        <Badge key={s} tone="info">{s}</Badge>
-                      ))}
-                    </InlineStack>
-                  </InlineStack>
-                  {color && (
-                    <InlineStack gap="400" blockAlign="center">
-                      <div style={{ width: 80, flexShrink: 0 }}>
-                        <Text as="span" tone="subdued">Color</Text>
-                      </div>
-                      <InlineStack gap="200" blockAlign="center">
-                        <div
-                          style={{
-                            width: 16,
-                            height: 16,
-                            borderRadius: '50%',
-                            background: color.hex,
-                            border: '1.5px solid rgba(0,0,0,0.14)',
-                            flexShrink: 0,
-                          }}
-                        />
-                        <Text as="span">{color.label}</Text>
-                      </InlineStack>
-                    </InlineStack>
-                  )}
-                  <InlineStack gap="400" blockAlign="center">
-                    <div style={{ width: 80, flexShrink: 0 }}>
-                      <Text as="span" tone="subdued">Size</Text>
-                    </div>
-                    <Text as="span">{current.size}</Text>
-                  </InlineStack>
-                  {visibleInstances.length === 0 && (
-                    <InlineStack gap="400" blockAlign="center">
-                      <div style={{ width: 80, flexShrink: 0 }}>
-                        <Text as="span" tone="subdued">Condition</Text>
-                      </div>
-                      {current.note ? (
-                        <Text as="span" tone="caution">{current.note}</Text>
-                      ) : (
-                        <Text as="span">Good</Text>
-                      )}
-                    </InlineStack>
-                  )}
-                </BlockStack>
-
-                {visibleInstances.length > 0 && (
-                  <>
-                    <Divider />
-                    <BlockStack gap="300">
-                      <Text variant="headingSm" as="h2">
-                        {`Available items (${visibleInstances.length})`}
-                      </Text>
-                      <div
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                          gap: 12,
-                        }}
-                      >
-                        {visibleInstances.map((inst) => (
-                          <div
-                            key={inst.label}
-                            style={{
-                              border: '1px solid #e3e5e7',
-                              borderRadius: 12,
-                              overflow: 'hidden',
-                              background: '#fff',
-                              display: 'flex',
-                              flexDirection: 'column',
-                            }}
-                          >
-                            <div style={{ height: 150, overflow: 'hidden', background: '#f6f6f7' }}>
-                              {inst.image ? (
-                                <div
-                                  style={{
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    padding: 8,
-                                    boxSizing: 'border-box',
-                                  }}
-                                >
-                                  <img
-                                    src={resolveImage(inst.image)}
-                                    alt={inst.label}
-                                    loading="lazy"
-                                    style={{
-                                      maxHeight: '100%',
-                                      maxWidth: '100%',
-                                      objectFit: 'contain',
-                                      display: 'block',
-                                    }}
-                                  />
-                                </div>
-                              ) : (
-                                <GarmentThumbnail item={current} />
-                              )}
-                            </div>
-                            <Box padding="300">
-                              <BlockStack gap="150">
-                                {inst.price != null && (
-                                  <Text variant="headingSm" as="p">{`$${inst.price.toFixed(2)}`}</Text>
-                                )}
-                                {inst.condition && (
-                                  <InlineStack>
-                                    <Badge tone={conditionTone(inst.condition)}>
-                                      {inst.condition}
-                                    </Badge>
-                                  </InlineStack>
-                                )}
-                                {inst.conditionNotes && (
-                                  <Text as="span" variant="bodySm" tone="subdued">
-                                    {inst.conditionNotes}
-                                  </Text>
-                                )}
-                                <InlineStack>
-                                  <Badge tone={statusTone(inst.status)}>{inst.status}</Badge>
-                                </InlineStack>
-                              </BlockStack>
-                            </Box>
-                          </div>
+                    <div className="flex gap-2">
+                      <dt className="w-14 flex-none font-medium text-ink-soft">Campus</dt>
+                      <dd className="flex flex-wrap gap-1.5">
+                        {current.schools.map((s) => (
+                          <Badge key={s} variant="brand">{s}</Badge>
                         ))}
-                      </div>
-                    </BlockStack>
-                  </>
-                )}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </Card>
 
-                {current.sourceUrl && (
-                  <Button url={current.sourceUrl} target="_blank" variant="plain">
-                    View original listing in the store →
-                  </Button>
-                )}
-              </BlockStack>
-            </Box>
+              {current.sourceUrl && (
+                <a
+                  href={current.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="-mt-1 inline-flex items-center gap-1.5 self-start text-sm font-semibold text-brand hover:underline"
+                >
+                  <ExternalLink size={15} />
+                  View original store listing
+                </a>
+              )}
 
-            {manageMode && (
-              <Box padding="400" paddingBlockStart="0">
-                <Divider />
-                <Box paddingBlockStart="400">
+              {visibleInstances.length > 0 && (
+                <section className="flex flex-col gap-3">
+                  <h2 className="text-base font-extrabold text-ink">
+                    {`Available items (${visibleInstances.length})`}
+                  </h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    {visibleInstances.map((inst) => (
+                      <InstanceCard key={inst.label} inst={inst} item={current} onZoom={setLightbox} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {manageMode && (
+                <Card className="p-4">
                   <ManagePhotosPanel
                     item={current}
                     onItemPatched={(patch) =>
                       setCurrent((prev) => (prev ? { ...prev, ...patch } : prev))
                     }
                   />
-                </Box>
-              </Box>
-            )}
-          </>
-        )}
-      </div>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Sticky CTA pinned to bottom */}
         {current && (
-          <div
-            style={{
-              flex: '0 0 auto',
-              padding: '12px 16px 20px',
-              borderTop: '1px solid #e3e5e7',
-              background: '#fff',
-            }}
-          >
-            <Button url={messengerUrl} target="_blank" variant="primary" fullWidth size="large">
+          <div className="flex-none border-t border-neutral-200 bg-white px-4 pb-5 pt-3">
+            <Button href={messengerUrl} target="_blank" rel="noreferrer" variant="primary" size="lg" fullWidth>
               Message me on Facebook to buy
             </Button>
           </div>
         )}
       </div>
+
+      {/* Photo lightbox */}
+      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+        {lightbox && (
+          <DialogContent>
+            <div className="h-[min(72vh,640px)] overflow-hidden rounded-2xl bg-white">
+              {lightbox.images.length > 1 ? (
+                <PhotoGallery images={lightbox.images} alt={lightbox.alt} />
+              ) : (
+                <img
+                  src={resolveImage(lightbox.images[0]!)}
+                  alt={lightbox.alt}
+                  className="h-full w-full object-contain"
+                />
+              )}
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
     </>
   );
 }

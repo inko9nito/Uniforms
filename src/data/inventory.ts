@@ -2,7 +2,7 @@ import generated from './inventory.generated.json';
 
 export type SchoolName = 'Carrollton' | 'Frisco';
 
-/** Polaris Badge tones we use for the availability badge. */
+/** Semantic tones for the availability badge (mapped to a Badge UI variant). */
 export type BadgeTone = 'success' | 'attention' | 'subdued';
 
 export interface AvailabilityBadge {
@@ -100,12 +100,14 @@ function displayNameFor(section: string, name: string): string {
   return name;
 }
 
-/**
- * Polaris <Badge> has no "subdued" tone — its default (no tone) badge is the
- * gray one. Map our semantic tone onto what the component accepts.
- */
-export function polarisBadgeTone(tone: BadgeTone): 'success' | 'attention' | undefined {
-  return tone === 'subdued' ? undefined : tone;
+/** Our UI <Badge> variant names. */
+export type BadgeVariant = 'success' | 'warning' | 'danger' | 'neutral' | 'brand' | 'dark';
+
+/** Map a semantic availability tone onto a Badge UI variant. */
+export function badgeVariant(tone: BadgeTone): BadgeVariant {
+  if (tone === 'success') return 'success';
+  if (tone === 'attention') return 'warning';
+  return 'neutral';
 }
 
 /** "$5" for a single price, "$3–$5" for a range. */
