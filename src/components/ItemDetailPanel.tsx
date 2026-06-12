@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ExternalLink, X, ZoomIn } from 'lucide-react';
 import { Badge } from './ui/badge';
-import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Dialog, DialogContent } from './ui/dialog';
 import {
@@ -20,7 +19,6 @@ import { cn } from '../lib/utils';
 interface Props {
   item: Item | null;
   onClose: () => void;
-  messengerUrl: string;
 }
 
 interface Lightbox {
@@ -93,7 +91,7 @@ function InstanceCard({
   );
 }
 
-export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
+export function ItemDetailPanel({ item, onClose }: Props) {
   const open = item !== null;
   const [current, setCurrent] = useState<Item | null>(item);
   const [lightbox, setLightbox] = useState<Lightbox | null>(null);
@@ -281,15 +279,6 @@ export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
             </div>
           )}
         </div>
-
-        {/* Sticky CTA pinned to bottom */}
-        {current && (
-          <div className="flex-none border-t border-neutral-200 bg-white px-4 pb-5 pt-3">
-            <Button href={messengerUrl} target="_blank" rel="noreferrer" variant="primary" size="lg" fullWidth>
-              Message me on Facebook to buy
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Photo lightbox */}
