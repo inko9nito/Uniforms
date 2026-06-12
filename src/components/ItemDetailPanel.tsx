@@ -15,14 +15,12 @@ import {
 } from '../data/inventory';
 import { GarmentThumbnail } from './GarmentThumbnail';
 import { PhotoGallery } from './PhotoGallery';
-import { ManagePhotosPanel } from './ManagePhotosPanel';
 import { cn } from '../lib/utils';
 
 interface Props {
   item: Item | null;
   onClose: () => void;
   messengerUrl: string;
-  manageMode: boolean;
 }
 
 interface Lightbox {
@@ -95,7 +93,7 @@ function InstanceCard({
   );
 }
 
-export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Props) {
+export function ItemDetailPanel({ item, onClose, messengerUrl }: Props) {
   const open = item !== null;
   const [current, setCurrent] = useState<Item | null>(item);
   const [lightbox, setLightbox] = useState<Lightbox | null>(null);
@@ -279,17 +277,6 @@ export function ItemDetailPanel({ item, onClose, messengerUrl, manageMode }: Pro
                     ))}
                   </div>
                 </section>
-              )}
-
-              {manageMode && (
-                <Card className="p-4">
-                  <ManagePhotosPanel
-                    item={current}
-                    onItemPatched={(patch) =>
-                      setCurrent((prev) => (prev ? { ...prev, ...patch } : prev))
-                    }
-                  />
-                </Card>
               )}
             </div>
           )}

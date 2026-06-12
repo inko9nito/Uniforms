@@ -8,7 +8,7 @@
 
 ## What this project is
 
-A React + Vite + TypeScript static site for selling second-hand school uniforms. It is hosted on GitHub Pages with no runtime backend. **Inventory now lives in Airtable** and is pulled into the repo at build time by `scripts/fetch-airtable.mjs` (runs in GitHub Actions, token stays server-side), which writes `src/data/inventory.generated.json` and downloads photos into `public/images/airtable/`. The app imports that JSON. The old `inventory.md` Markdown table is retained only for the dormant browser editor and no longer feeds the site. See **Airtable backend** below.
+A React + Vite + TypeScript static site for selling second-hand school uniforms. It is hosted on GitHub Pages with no runtime backend. **Inventory lives in Airtable** and is pulled into the repo at build time by `scripts/fetch-airtable.mjs` (runs in GitHub Actions, token stays server-side), which writes `src/data/inventory.generated.json` and downloads photos into `public/images/airtable/`. The app imports that JSON. The site is **read-only for buyers** — there is no in-app editor; all inventory changes happen in Airtable. (The old `inventory.md` table and the browser edit mode were removed in #51.) See **Airtable backend** below.
 
 ---
 
@@ -18,7 +18,7 @@ A React + Vite + TypeScript static site for selling second-hand school uniforms.
 |---|---|
 | UI framework | React 18 + TypeScript |
 | Build tool | Vite (base: `'./'` — relative, so builds work at root and at PR preview sub-paths) |
-| Component library | Shopify Polaris v12 (`@shopify/polaris-icons` available as transitive dep — import directly) |
+| UI / styling | **Tailwind CSS v4** (`@tailwindcss/vite`) + **Radix primitives** (the shadcn approach). Design tokens in `src/index.css` `@theme` (Plus Jakarta Sans, off-white page, near-black ink, violet `--color-brand`, `rounded-card`). Small in-repo UI kit in `src/components/ui/` (Button, Badge, Card, Dialog, Select). `cn()` = clsx + tailwind-merge; icons from `lucide-react`. Consumer-storefront ("Shop app") look — migrated off Shopify Polaris → Atlaskit → Tailwind across #55/#57. |
 | Data source | **Airtable** → `src/data/inventory.generated.json` (built by `scripts/fetch-airtable.mjs`), imported in `src/data/inventory.ts` |
 | Image storage | `public/images/` (legacy) + `public/images/airtable/` (downloaded from Airtable at build time) |
 | Hosting | GitHub Pages, served from the `gh-pages` branch root |
@@ -27,28 +27,20 @@ A React + Vite + TypeScript static site for selling second-hand school uniforms.
 
 ## Inventory data model
 
-`inventory.md` contains one Markdown table with these columns (0-indexed):
-
-```
-Section(0) | Item(1) | Size(2) | Schools(3) | Condition(4) | Price(5) | Qty(6) | Image(7) | Link(8)
-```
-
-- **Section:** Girls, Boys, or Unisex (controls which group the item appears in)
-- **Schools:** `Carrollton`, `Frisco`, or `Both`
-- **Image** column: comma-separated paths (`images/foo.jpg`) or full URLs
-- **Link** column: optional URL to original store listing
-- Each row gets a `sourceLine` (1-based line number in `inventory.md`) used to patch the file via the GitHub API from the browser
-- The `COL` const in `src/data/github.ts` maps field names to column indices — always use it rather than hard-coding numbers
-
-The `Item` type (in `src/data/inventory.ts`) now has these fields:
+Inventory comes entirely from Airtable (see **Airtable backend**). The `Item` type (in `src/data/inventory.ts`) has these fields:
 ```ts
 id, section, name, displayName, size, schools, note (condition summary),
-unitPrice (= priceMin), priceMin, priceMax, priceDisplay,
+priceMin, priceMax, priceDisplay,
 quantity (= availableCount), availableCount, reservedCount,
-badge { label, tone }, images, sourceUrl, sourceLine (0 — Airtable-backed),
-instances [{ label, condition, conditionNotes, status, price }]
+badge { label, tone }, images, sourceUrl,
+instances [{ label, condition, conditionNotes, status, price, image? }]
 ```
-`unitPrice`/`quantity` are kept as aliases so the dormant `inventory.md` editor still compiles. `sourceLine` is always `0`.
+
+- **section:** Girls, Boys, or Unisex (controls which group the item appears in)
+- **schools:** subset of `Carrollton` / `Frisco`
+- **images:** repo-relative paths (`images/airtable/foo.jpg`) or full URLs; empty falls back to a `GarmentThumbnail` illustration
+- **sourceUrl:** optional link to the original store listing
+- Helpers: `priceLabel(item)`, `isSoldOut(item)`, `badgeVariant(tone)` (→ UI Badge variant)
 
 ---
 
@@ -82,7 +74,7 @@ instances [{ label, condition, conditionNotes, status, price }]
 - **Workflow:** `.github/workflows/preview.yml`
 - **Action:** builds the PR branch, deploys to `gh-pages/pr-preview/pr-<N>/` using `rossjrw/pr-preview-action`. The action **automatically comments the preview URL on the PR** and tears down the preview when the PR closes.
 - **Preview URL pattern:** `https://inko9nito.github.io/Uniforms/pr-preview/pr-<N>/`
-- **Important:** The preview is built from the **PR branch's** snapshot of `inventory.md`. Edit mode always writes to `main`. So a save on the preview → reload of the preview will NOT show the edit (it reads the PR branch). The optimistic in-session update will still work. Full round-trip testing (save → reload → persisted) must be done on the **live production site** after merging.
+- **Photos in previews:** PR-preview builds run the Airtable sync too, so previews show real photos when `AIRTABLE_TOKEN` is reachable. If the firewall blocks the Airtable CDN, the preview falls back to garment illustrations.
 
 ### Standard PR workflow
 1. Create a branch off `main`.
@@ -94,38 +86,9 @@ instances [{ label, condition, conditionNotes, status, price }]
 
 ---
 
-## Browser-side editing (manage mode)
+## Editing inventory
 
-There is an in-browser edit mode accessible via the floating **"Edit"** button (bottom-right, `position: fixed`, `zIndex: 530`). Tapping it, then tapping a card, opens the item detail panel with a `ManagePhotosPanel` section at the bottom.
-
-### Token
-- Requires a GitHub PAT with `repo` scope
-- Stored in `localStorage` under key `fca-github-token` — **per-device and per-browser**, not synced. Each device needs its own token (can be different tokens).
-- Token is used to call the GitHub Contents API (`PUT /repos/inko9nito/Uniforms/contents/...`) to commit changes directly to `main`
-
-### What can be edited from the browser
-All fields save together in a single `inventory.md` commit via `setInventoryCells`:
-- **Title** (Item name)
-- **Gender** (Section) — Select: Girls / Boys / Unisex
-- **Campus** (Schools) — multi-select ChoiceList: Carrollton / Frisco (saved as "Both" when both selected)
-- **Size**
-- **Condition** (note)
-- **Price**
-- **Qty**
-- **Original product URL** (Link column)
-- **Photos** — add (upload from device or paste URL), remove, reorder (↑/↓)
-
-### Optimistic updates
-`ManagePhotosPanel` takes an `onItemPatched(patch: Partial<Item>)` callback. After every successful save, it calls this with the updated fields. `ItemDetailPanel` merges the patch into `current` immediately, so edits appear in the detail view right away — no reload needed.
-
-### GitHub helpers (`src/data/github.ts`)
-- `COL` — exported const mapping field names → column indices (0-indexed)
-- `setInventoryCells(md, sourceLine, updates: Record<number, string>)` — patches multiple columns in one pass
-- `setInventoryCell(md, sourceLine, colIndex, value)` — single column (uses setInventoryCells internally)
-- `setInventorySize`, `setInventoryCondition`, `setInventoryQuantity`, `setInventoryImages` — convenience wrappers
-- `addImageToInventoryContent`, `removeImageFromInventoryContent` — append/remove image from image cell
-- `getFile`, `putFile` — GitHub Contents API read/write
-- `fileToBase64`, `slugify`, `loadToken`, `saveToken`
+There is **no in-app editor** — the site is read-only for buyers. All inventory changes (listings, prices, photos, availability) are made directly in **Airtable**, then picked up by the next deploy (push to `main`, or the 6-hourly schedule). The former browser "manage mode" / `ManagePhotosPanel` / `inventory.md` / `src/data/github.ts` were removed in #51.
 
 ---
 
@@ -135,15 +98,15 @@ All fields save together in a single `inventory.md` commit via `setInventoryCell
 |---|---|
 | `scripts/fetch-airtable.mjs` | Build-time Airtable → JSON sync (runs in CI). **Source of truth flow.** |
 | `src/data/inventory.generated.json` | Generated inventory snapshot the app imports (regenerated each deploy) |
-| `inventory.md` | Legacy table; only the dormant browser editor still writes to it |
 | `public/images/` | Product photos served as static assets (`airtable/` subdir is build-generated) |
-| `src/data/inventory.ts` | Imports `inventory.generated.json`, exports typed `Item[]` + helpers (`priceLabel`, `isSoldOut`, `polarisBadgeTone`) |
-| `src/data/github.ts` | GitHub API helpers for the dormant `inventory.md` editor |
-| `src/App.tsx` | Main app, filters (campus + gender), manage mode toggle (floating FAB) |
-| `src/components/ItemDetailPanel.tsx` | Full-screen (mobile) / right drawer (desktop ≥768px) detail view; merges `onItemPatched` into `current` state |
-| `src/components/ManagePhotosPanel.tsx` | Edit-mode panel: all editable fields + photo management; uses Polaris FormLayout, Thumbnail, Banner, ChoiceList, Select, icon buttons |
-| `src/components/ItemCard.tsx` | Grid card |
-| `src/components/PhotoGallery.tsx` | Swipeable image gallery in the detail view |
+| `src/index.css` | Tailwind v4 entry + `@theme` design tokens |
+| `src/components/ui/` | In-repo UI kit: `button`, `badge`, `card`, `dialog` (Radix lightbox), `select` (Radix) |
+| `src/lib/utils.ts` | `cn()` class-name merge helper |
+| `src/data/inventory.ts` | Imports `inventory.generated.json`, exports typed `Item[]` + helpers (`priceLabel`, `isSoldOut`, `badgeVariant`) |
+| `src/App.tsx` | Main app: filters (campus + gender), section grids, detail panel |
+| `src/components/ItemDetailPanel.tsx` | Full-screen (mobile) / right drawer (desktop ≥768px) detail view: downplayed official-photo thumbnail beside Title / Price+badge / Size / Campus; per-instance cards; tap a photo → Radix Dialog lightbox |
+| `src/components/ItemCard.tsx` | Grid card (square cover image, availability badge) |
+| `src/components/PhotoGallery.tsx` | Swipeable image gallery (used in the lightbox) |
 | `src/components/GarmentThumbnail.tsx` | SVG placeholder when no photos |
 | `src/components/EmptySchoolState.tsx` | Empty state when filters return nothing |
 | `.github/workflows/deploy.yml` | Production deploy to gh-pages |
@@ -162,7 +125,7 @@ npm run build    # Type-check (tsc) + production build into dist/
 
 ## GitHub rate limit behaviour
 
-After a series of commits (e.g. several edit-mode saves in a row), GitHub's secondary rate limit can block API calls for 5–15+ minutes. The merge tool works fine but `mcp__github__issue_write` is often the first call to fail. Retry with waits: 60s → 180s → 300s. If it still fails, ask Vera to close the issue manually at `https://github.com/inko9nito/Uniforms/issues/<N>`.
+After a burst of GitHub API calls, GitHub's secondary rate limit can block calls for 5–15+ minutes. The merge tool works fine but `mcp__github__issue_write` is often the first call to fail. Retry with waits: 60s → 180s → 300s. If it still fails, ask Vera to close the issue manually at `https://github.com/inko9nito/Uniforms/issues/<N>`.
 
 ---
 
@@ -174,8 +137,6 @@ After a series of commits (e.g. several edit-mode saves in a row), GitHub's seco
 - GitHub MCP tools (`mcp__github__*`) are available for PR creation, merging, and issue management. Load schemas via `ToolSearch` before calling.
 - If GitHub MCP OAuth shows "Server Turned Down", the auth endpoint is broken on Anthropic's side — it's not a repo issue.
 - The old branch `claude/uniform-resale-app-NWrWF` exists remotely but is far behind `main` — do NOT use it. Always create a fresh branch from `main`.
-- When Vera tests on a PR preview and says "it's not saving" or "blank after save" — the preview reads the PR branch snapshot, but edit mode writes to `main`. This is expected. Instruct her to test persistence on the production site after merging.
-- The `@shopify/polaris-icons` package is available as a transitive dependency (installed by Polaris). Import icons like `ArrowUpIcon`, `ArrowDownIcon`, `DeleteIcon`, `PlusIcon` directly from `@shopify/polaris-icons` without adding it to `package.json`.
-- **Inventory is Airtable-backed now.** Edit listings in Airtable, not `inventory.md`. The browser "Edit" manage mode still works but writes to `inventory.md`, which each deploy **overwrites** from Airtable — so those edits are effectively temporary. Consider it deprecated.
+- **Inventory is Airtable-backed and the site is read-only.** All listing/price/photo/availability changes happen in Airtable; the next deploy picks them up. There is no in-app editor (removed in #51).
 - The Airtable CDN (`*.airtableusercontent.com`) and API are firewalled from Claude's sandboxes, so `npm run build` / image downloads can't reach Airtable locally; only CI (GitHub-hosted runners) can. Verify data via the Airtable MCP and let CI do the real fetch.
-- Polaris `<Badge>` has no `subdued`/gray tone — pass `tone={undefined}` for it. Use `polarisBadgeTone()` from `inventory.ts` to map our `BadgeTone`.
+- **Styling is Tailwind v4 + Radix (shadcn approach).** Colors/radius/font come from `@theme` tokens in `src/index.css` (`bg-brand`, `text-ink`, `rounded-card`, …). Reusable components live in `src/components/ui/`; icons from `lucide-react`. Availability badges use the `Badge` UI variant from `badgeVariant(tone)` (success / warning / neutral; sold out → danger).
