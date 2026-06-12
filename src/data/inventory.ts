@@ -29,7 +29,7 @@ export interface Item {
   id: string;
   section: string;
   name: string;
-  /** Name shown to buyers — prefixed with the section (Girls/Boys) unless unisex. */
+  /** Name shown to buyers — the raw Airtable product name (no prefixing). */
   displayName: string;
   size: string;
   schools: SchoolName[];
@@ -78,12 +78,6 @@ export function resolveImage(src: string): string {
   return import.meta.env.BASE_URL + src.replace(/^\/+/, '');
 }
 
-/** Girls/Boys items get a section prefix; Unisex (and anything else) keep their plain name. */
-function displayNameFor(section: string, name: string): string {
-  if (section === 'Girls' || section === 'Boys') return `${section} ${name}`;
-  return name;
-}
-
 /** Our UI <Badge> variant names. */
 export type BadgeVariant = 'success' | 'warning' | 'danger' | 'neutral' | 'brand' | 'dark';
 
@@ -109,7 +103,8 @@ export function isSoldOut(item: Pick<Item, 'availableCount' | 'reservedCount'>):
 function toItem(p: GeneratedProduct): Item {
   return {
     ...p,
-    displayName: displayNameFor(p.section, p.name),
+    // Show the product name exactly as it appears in Airtable — no prefixing.
+    displayName: p.name,
     quantity: p.availableCount,
   };
 }
