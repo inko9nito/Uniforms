@@ -43,7 +43,7 @@ function Section({ title, items, onOpen }: SectionProps) {
         </Badge>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((item) => (
           <ItemCard key={item.id} item={item} onOpen={onOpen} />
         ))}

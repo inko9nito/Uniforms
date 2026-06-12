@@ -12,50 +12,64 @@ export function ItemCard({ item, onOpen }: Props) {
   const sold = isSoldOut(item);
 
   return (
-    <button
-      type="button"
+    // Outer wrapper: transparent (no surface). Plain block layout so the text
+    // children truncate against the grid track instead of fighting flex sizing.
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onOpen(item)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen(item);
+        }
+      }}
       className={cn(
-        'flex h-full flex-col overflow-hidden rounded-3xl border border-black/[0.04] bg-white text-left shadow-[0_1px_2px_rgba(15,16,26,0.04),0_10px_24px_-16px_rgba(15,16,26,0.18)] transition-[opacity,filter,transform] duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
+        'group min-w-0 cursor-pointer focus:outline-none',
         sold && 'opacity-60 grayscale',
       )}
     >
-      <div className="relative aspect-square overflow-hidden bg-neutral-50">
+      {/* Only the photo is the "tile": white surface, rounded, subtle shadow. */}
+      <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_2px_8px_-2px_rgba(15,16,26,0.06),0_12px_28px_-18px_rgba(15,16,26,0.20)] transition-transform duration-200 group-hover:-translate-y-0.5 group-focus-visible:ring-2 group-focus-visible:ring-brand/40">
         {item.images.length > 0 ? (
           <img
             src={resolveImage(item.images[0]!)}
             alt={item.name}
             loading="lazy"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
           <GarmentThumbnail item={item} />
         )}
-        <div className="absolute left-2.5 top-2.5">
+        <div className="absolute left-1.5 top-1.5">
           {sold ? (
-            <Badge variant="danger">Sold out</Badge>
+            <Badge variant="danger" className="px-2 py-0.5 text-[10px] shadow-sm">Sold out</Badge>
           ) : (
-            <Badge variant={badgeVariant(item.badge.tone)}>{item.badge.label}</Badge>
+            <Badge
+              variant={badgeVariant(item.badge.tone)}
+              className="px-2 py-0.5 text-[10px] shadow-sm"
+            >
+              {item.badge.label}
+            </Badge>
           )}
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-1 p-3">
-        <h3 className="truncate text-sm font-bold text-ink">{item.displayName}</h3>
-        <p className="truncate text-xs font-medium text-ink-soft">
+      {/* Text sits in the negative space below the tile — no card behind it. */}
+      <div className="mt-2 overflow-hidden">
+        <h3 className="truncate text-[13px] font-semibold leading-snug text-ink">
+          {item.displayName}
+        </h3>
+        <p className="mt-0.5 truncate text-[11px] leading-snug text-ink-soft">
           {`Size ${item.size} · ${item.schools.join(' & ')}`}
         </p>
-        <div className="min-h-4">
-          {item.note ? (
-            <p className="truncate text-xs font-medium text-amber-700" title={item.note}>
-              {item.note}
-            </p>
-          ) : (
-            <span aria-hidden>&nbsp;</span>
-          )}
-        </div>
-        <p className="mt-auto pt-1 text-base font-extrabold text-ink">{priceLabel(item)}</p>
+        {item.note && (
+          <p className="truncate text-[11px] leading-snug text-ink-soft" title={item.note}>
+            {item.note}
+          </p>
+        )}
+        <p className="mt-1 text-[14px] font-bold text-ink">{priceLabel(item)}</p>
       </div>
-    </button>
+    </div>
   );
 }
