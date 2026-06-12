@@ -100,6 +100,40 @@ export function isSoldOut(item: Pick<Item, 'availableCount' | 'reservedCount'>):
   return item.availableCount <= 0 && item.reservedCount <= 0;
 }
 
+/**
+ * Known store domains → their properly-formatted brand names (looked up, not
+ * naively derived from the URL). Anything not listed falls back to a
+ * prettified hostname.
+ */
+const STORE_NAMES: Record<string, string> = {
+  'flynnohara.com': "Flynn O'Hara",
+  'landsend.com': "Lands' End",
+  'cheddarup.com': 'Cheddar Up',
+  'frenchtoast.com': 'French Toast',
+  'dennisuniform.com': 'DENNIS Uniform',
+  'educationaloutfitters.com': 'Educational Outfitters',
+  'risse-brothers.com': 'Risse Brothers',
+  'rissebrothers.com': 'Risse Brothers',
+  'tommyhilfiger.com': 'Tommy Hilfiger',
+  'oldnavy.com': 'Old Navy',
+  'target.com': 'Target',
+  'walmart.com': 'Walmart',
+  'amazon.com': 'Amazon',
+};
+
+/** Derive a human store name from a listing URL, e.g. flynnohara.com → "Flynn O'Hara". */
+export function storeName(url: string): string | null {
+  try {
+    const host = new URL(url).hostname.replace(/^(www|my|shop|store)\./, '');
+    const known = STORE_NAMES[host];
+    if (known) return known;
+    const base = host.split('.')[0] ?? '';
+    return base ? base.charAt(0).toUpperCase() + base.slice(1) : null;
+  } catch {
+    return null;
+  }
+}
+
 function toItem(p: GeneratedProduct): Item {
   return {
     ...p,

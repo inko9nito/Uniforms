@@ -7,8 +7,6 @@ import { EmptyResults } from './components/EmptySchoolState';
 import { ItemDetailPanel } from './components/ItemDetailPanel';
 import { cn } from './lib/utils';
 
-const MESSENGER_URL = 'https://m.me/inko9nito?hash=AbZ0fXAb8rAGhWaG&source_id=8585216';
-
 const SCHOOL_OPTIONS: (SelectOption & { school: SchoolName | null })[] = [
   { label: 'All campuses', value: 'all', school: null },
   { label: 'Carrollton', value: 'carrollton', school: 'Carrollton' },
@@ -171,11 +169,7 @@ export default function App() {
         </div>
       </div>
 
-      <ItemDetailPanel
-        item={selectedItem}
-        onClose={() => setSelectedItem(null)}
-        messengerUrl={MESSENGER_URL}
-      />
+      <ItemDetailPanel item={selectedItem} onClose={() => setSelectedItem(null)} />
     </div>
   );
 }
