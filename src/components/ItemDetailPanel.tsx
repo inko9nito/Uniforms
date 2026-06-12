@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ExternalLink, X, ZoomIn } from 'lucide-react';
 import { Badge } from './ui/badge';
-import { Card } from './ui/card';
 import { Dialog, DialogContent } from './ui/dialog';
 import {
   resolveImage,
@@ -198,14 +197,14 @@ export function ItemDetailPanel({ item, onClose }: Props) {
         <div
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          className="flex-1 overflow-y-auto px-4 pb-6 pt-16 [-webkit-overflow-scrolling:touch]"
+          className="flex-1 overflow-y-auto [-webkit-overflow-scrolling:touch]"
         >
           {current && (
-            <div className="flex flex-col gap-4">
-              {/* Header: small, downplayed official photo beside the key facts.
-                  The original-listing link lives inside this card so it reads as
-                  part of the product header, separate from the instances below. */}
-              <Card className="p-4">
+            <>
+              {/* Full-bleed white product header, flush to the panel edges (not a
+                  card). The original-listing link sits in the text column so it
+                  aligns with the title and labels rather than the photo. */}
+              <div className="bg-white px-4 pb-4 pt-16 shadow-[0_1px_2px_rgba(15,16,26,0.06)]">
                 <div className="flex gap-4">
                   <button
                     type="button"
@@ -248,24 +247,23 @@ export function ItemDetailPanel({ item, onClose }: Props) {
                         <dd className="font-semibold text-ink">{current.schools.join(' & ')}</dd>
                       </div>
                     </dl>
+                    {current.sourceUrl && (
+                      <a
+                        href={current.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline"
+                      >
+                        <ExternalLink size={15} />
+                        View original store listing
+                      </a>
+                    )}
                   </div>
                 </div>
-
-                {current.sourceUrl && (
-                  <a
-                    href={current.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline"
-                  >
-                    <ExternalLink size={15} />
-                    View original store listing
-                  </a>
-                )}
-              </Card>
+              </div>
 
               {visibleInstances.length > 0 && (
-                <section className="mt-3 flex flex-col gap-3">
+                <section className="flex flex-col gap-3 px-4 pb-6 pt-5">
                   <h2 className="text-base font-extrabold text-ink">
                     {`Available items (${visibleInstances.length})`}
                   </h2>
@@ -276,7 +274,7 @@ export function ItemDetailPanel({ item, onClose }: Props) {
                   </div>
                 </section>
               )}
-            </div>
+            </>
           )}
         </div>
       </div>
