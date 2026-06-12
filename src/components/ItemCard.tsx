@@ -16,18 +16,20 @@ export function ItemCard({ item, onOpen }: Props) {
       type="button"
       onClick={() => onOpen(item)}
       className={cn(
-        'group flex h-full flex-col rounded-[20px] bg-white p-2 text-left shadow-[0_2px_8px_-2px_rgba(15,16,26,0.06),0_12px_28px_-18px_rgba(15,16,26,0.22)] transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
+        'group flex h-full min-w-0 flex-col rounded-[20px] bg-white p-2 text-left shadow-[0_2px_8px_-2px_rgba(15,16,26,0.06),0_12px_28px_-18px_rgba(15,16,26,0.22)] transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
         sold && 'opacity-60 grayscale',
       )}
     >
-      {/* Framed product image on a soft gray panel (Shop-app style) */}
-      <div className="relative aspect-square overflow-hidden rounded-2xl bg-neutral-100">
+      {/* Framed product image. White (not gray) so white-background photos blend
+          into the card instead of sitting in a gray box; a hairline border keeps
+          the "boxed" look from the Shop app reference. */}
+      <div className="relative aspect-square overflow-hidden rounded-2xl border border-black/[0.06] bg-white">
         {item.images.length > 0 ? (
           <img
             src={resolveImage(item.images[0]!)}
             alt={item.name}
             loading="lazy"
-            className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-[1.03]"
+            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
           <GarmentThumbnail item={item} />
@@ -43,15 +45,15 @@ export function ItemCard({ item, onOpen }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col px-1.5 pb-1 pt-2.5">
-        <h3 className="truncate text-[15px] font-semibold leading-snug text-ink">
+      <div className="flex min-w-0 flex-1 flex-col px-1 pb-0.5 pt-2.5">
+        <h3 className="truncate text-[15px] font-semibold leading-tight text-ink">
           {item.displayName}
         </h3>
-        <p className="mt-0.5 truncate text-[13px] leading-snug text-ink-soft">
+        <p className="mt-1 truncate text-[12px] leading-snug text-ink-soft">
           {`Size ${item.size} · ${item.schools.join(' & ')}`}
         </p>
         {item.note && (
-          <p className="mt-0.5 truncate text-[13px] leading-snug text-ink-soft" title={item.note}>
+          <p className="truncate text-[12px] leading-snug text-ink-soft" title={item.note}>
             {item.note}
           </p>
         )}
