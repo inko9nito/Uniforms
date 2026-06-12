@@ -12,12 +12,20 @@ export function ItemCard({ item, onOpen }: Props) {
   const sold = isSoldOut(item);
 
   return (
-    // Outer wrapper: no background, border, or shadow — transparent.
-    <button
-      type="button"
+    // Outer wrapper: transparent (no surface). Plain block layout so the text
+    // children truncate against the grid track instead of fighting flex sizing.
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onOpen(item)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen(item);
+        }
+      }}
       className={cn(
-        'group flex min-w-0 flex-col text-left focus:outline-none',
+        'group min-w-0 cursor-pointer focus:outline-none',
         sold && 'opacity-60 grayscale',
       )}
     >
@@ -33,11 +41,14 @@ export function ItemCard({ item, onOpen }: Props) {
         ) : (
           <GarmentThumbnail item={item} />
         )}
-        <div className="absolute left-2 top-2">
+        <div className="absolute left-1.5 top-1.5">
           {sold ? (
-            <Badge variant="danger" className="shadow-sm">Sold out</Badge>
+            <Badge variant="danger" className="px-2 py-0.5 text-[10px] shadow-sm">Sold out</Badge>
           ) : (
-            <Badge variant={badgeVariant(item.badge.tone)} className="shadow-sm">
+            <Badge
+              variant={badgeVariant(item.badge.tone)}
+              className="px-2 py-0.5 text-[10px] shadow-sm"
+            >
               {item.badge.label}
             </Badge>
           )}
@@ -45,20 +56,20 @@ export function ItemCard({ item, onOpen }: Props) {
       </div>
 
       {/* Text sits in the negative space below the tile — no card behind it. */}
-      <div className="mt-2.5 min-w-0 px-0.5">
-        <h3 className="truncate text-[15px] font-semibold leading-tight text-ink">
+      <div className="mt-2 overflow-hidden">
+        <h3 className="truncate text-[13px] font-semibold leading-snug text-ink">
           {item.displayName}
         </h3>
-        <p className="mt-1 truncate text-[12px] leading-snug text-ink-soft">
+        <p className="mt-0.5 truncate text-[11px] leading-snug text-ink-soft">
           {`Size ${item.size} · ${item.schools.join(' & ')}`}
         </p>
         {item.note && (
-          <p className="truncate text-[12px] leading-snug text-ink-soft" title={item.note}>
+          <p className="truncate text-[11px] leading-snug text-ink-soft" title={item.note}>
             {item.note}
           </p>
         )}
-        <p className="mt-1.5 text-[15px] font-bold text-ink">{priceLabel(item)}</p>
+        <p className="mt-1 text-[14px] font-bold text-ink">{priceLabel(item)}</p>
       </div>
-    </button>
+    </div>
   );
 }

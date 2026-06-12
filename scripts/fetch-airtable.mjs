@@ -125,8 +125,10 @@ export function buildProducts(products, instances) {
     const reserved = kids.filter((k) => selName(k.fields[F.instStatus]) === 'Reserved');
     const nonSold = kids.filter((k) => selName(k.fields[F.instStatus]) !== 'Sold');
 
-    // Price range from the buyable instances (fall back to non-sold ones).
-    const pool = available.length ? available : nonSold;
+    // Price range. Prefer buyable instances, then non-sold, then fall back to
+    // all instances (incl. sold) so a fully sold-out listing still shows its
+    // original price rather than $0.
+    const pool = available.length ? available : nonSold.length ? nonSold : kids;
     const prices = pool.map((k) => asNumber(k.fields[F.instPrice])).filter((n) => n != null && n > 0);
     const priceMin = prices.length ? Math.min(...prices) : 0;
     const priceMax = prices.length ? Math.max(...prices) : priceMin;
