@@ -12,18 +12,17 @@ export function ItemCard({ item, onOpen }: Props) {
   const sold = isSoldOut(item);
 
   return (
+    // Outer wrapper: no background, border, or shadow — transparent.
     <button
       type="button"
       onClick={() => onOpen(item)}
       className={cn(
-        'group flex h-full min-w-0 flex-col rounded-[20px] bg-white p-2 text-left shadow-[0_2px_8px_-2px_rgba(15,16,26,0.06),0_12px_28px_-18px_rgba(15,16,26,0.22)] transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
+        'group flex min-w-0 flex-col text-left focus:outline-none',
         sold && 'opacity-60 grayscale',
       )}
     >
-      {/* Framed product image. White (not gray) so white-background photos blend
-          into the card instead of sitting in a gray box; a hairline border keeps
-          the "boxed" look from the Shop app reference. */}
-      <div className="relative aspect-square overflow-hidden rounded-2xl border border-black/[0.06] bg-white">
+      {/* Only the photo is the "tile": white surface, rounded, subtle shadow. */}
+      <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_2px_8px_-2px_rgba(15,16,26,0.06),0_12px_28px_-18px_rgba(15,16,26,0.20)] transition-transform duration-200 group-hover:-translate-y-0.5 group-focus-visible:ring-2 group-focus-visible:ring-brand/40">
         {item.images.length > 0 ? (
           <img
             src={resolveImage(item.images[0]!)}
@@ -45,7 +44,8 @@ export function ItemCard({ item, onOpen }: Props) {
         </div>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col px-1 pb-0.5 pt-2.5">
+      {/* Text sits in the negative space below the tile — no card behind it. */}
+      <div className="mt-2.5 min-w-0 px-0.5">
         <h3 className="truncate text-[15px] font-semibold leading-tight text-ink">
           {item.displayName}
         </h3>
@@ -57,7 +57,7 @@ export function ItemCard({ item, onOpen }: Props) {
             {item.note}
           </p>
         )}
-        <p className="mt-2 text-[15px] font-bold text-ink">{priceLabel(item)}</p>
+        <p className="mt-1.5 text-[15px] font-bold text-ink">{priceLabel(item)}</p>
       </div>
     </button>
   );
