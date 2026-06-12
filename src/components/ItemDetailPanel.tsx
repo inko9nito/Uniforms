@@ -234,16 +234,16 @@ export function ItemDetailPanel({ item, onClose }: Props) {
                     {store && (
                       <p className="truncate text-[12px] font-medium text-ink-soft">{store}</p>
                     )}
-                    <h1 className="text-lg font-extrabold leading-tight text-ink">
+                    <h1 className="text-base font-extrabold leading-tight text-ink">
                       {current.displayName}
                     </h1>
-                    <dl className="mt-2.5 space-y-1 text-sm">
-                      <div className="flex gap-2">
-                        <dt className="w-14 flex-none font-medium text-ink-soft">Size</dt>
+                    <dl className="mt-2 space-y-1 text-[12px]">
+                      <div className="flex gap-x-6">
+                        <dt className="w-12 flex-none font-medium text-ink-soft">Size</dt>
                         <dd className="font-semibold text-ink">{current.size}</dd>
                       </div>
-                      <div className="flex gap-2">
-                        <dt className="w-14 flex-none font-medium text-ink-soft">Campus</dt>
+                      <div className="flex gap-x-6">
+                        <dt className="w-12 flex-none font-medium text-ink-soft">Campus</dt>
                         <dd className="font-semibold text-ink">{current.schools.join(' & ')}</dd>
                       </div>
                     </dl>
