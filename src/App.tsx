@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Info } from 'lucide-react';
 import { Badge } from './components/ui/badge';
 import { Select, type SelectOption } from './components/ui/select';
 import { ITEMS, type Item, type SchoolName } from './data/inventory';
 import { ItemCard } from './components/ItemCard';
 import { EmptyResults } from './components/EmptySchoolState';
 import { ItemDetailPanel } from './components/ItemDetailPanel';
+import { cn } from './lib/utils';
 
 const MESSENGER_URL = 'https://m.me/inko9nito?hash=AbZ0fXAb8rAGhWaG&source_id=8585216';
 
@@ -52,9 +52,43 @@ function Section({ title, items, onOpen }: SectionProps) {
   );
 }
 
+interface ToggleProps {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+}
+
+function Toggle({ checked, onChange, label }: ToggleProps) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="inline-flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded-full"
+    >
+      <span
+        className={cn(
+          'relative h-6 w-[42px] flex-none rounded-full transition-colors',
+          checked ? 'bg-brand' : 'bg-neutral-300',
+        )}
+      >
+        <span
+          className={cn(
+            'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200',
+            checked && 'translate-x-[18px]',
+          )}
+        />
+      </span>
+      <span className="text-sm font-semibold text-ink">{label}</span>
+    </button>
+  );
+}
+
 export default function App() {
   const [schoolId, setSchoolId] = useState('all');
   const [sectionId, setSectionId] = useState('all');
+  const [availableOnly, setAvailableOnly] = useState(true);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
   const activeSchool = SCHOOL_OPTIONS.find((s) => s.value === schoolId)?.school ?? null;
@@ -65,9 +99,10 @@ export default function App() {
       ITEMS.filter(
         (i) =>
           (activeSchool ? i.schools.includes(activeSchool) : true) &&
-          (activeSection ? i.section === activeSection : true),
+          (activeSection ? i.section === activeSection : true) &&
+          (availableOnly ? i.availableCount > 0 : true),
       ),
-    [activeSchool, activeSection],
+    [activeSchool, activeSection, availableOnly],
   );
 
   const sections = useMemo(() => {
@@ -91,26 +126,7 @@ export default function App() {
           <p className="mt-0.5 text-sm font-medium text-ink-soft">The Shops at Legacy, Plano</p>
         </header>
 
-        <div className="flex items-start gap-3 rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(15,16,26,0.04)]">
-          <div className="mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-full bg-brand-soft text-brand">
-            <Info size={16} />
-          </div>
-          <p className="text-sm leading-relaxed text-ink-soft">
-            Everything below is available unless marked <strong className="text-ink">Sold</strong>.
-            To buy something,{' '}
-            <a
-              href={MESSENGER_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="font-semibold text-brand hover:underline"
-            >
-              message me on Facebook
-            </a>
-            .
-          </p>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-ink-soft">
               Campus
@@ -133,6 +149,10 @@ export default function App() {
               options={GENDER_OPTIONS}
             />
           </div>
+        </div>
+
+        <div className="mt-4">
+          <Toggle checked={availableOnly} onChange={setAvailableOnly} label="Available only" />
         </div>
 
         <div className="mt-7 flex flex-col gap-8">
