@@ -242,11 +242,7 @@ export function ItemDetailPanel({ item, onClose }: Props) {
                     </div>
                     <div className="flex gap-2">
                       <dt className="w-14 flex-none font-medium text-ink-soft">Campus</dt>
-                      <dd className="flex flex-wrap gap-1.5">
-                        {current.schools.map((s) => (
-                          <Badge key={s} variant="brand">{s}</Badge>
-                        ))}
-                      </dd>
+                      <dd className="font-semibold text-ink">{current.schools.join(' & ')}</dd>
                     </div>
                   </dl>
                 </div>
@@ -265,7 +261,7 @@ export function ItemDetailPanel({ item, onClose }: Props) {
               )}
 
               {visibleInstances.length > 0 && (
-                <section className="flex flex-col gap-3">
+                <section className="mt-3 flex flex-col gap-3">
                   <h2 className="text-base font-extrabold text-ink">
                     {`Available items (${visibleInstances.length})`}
                   </h2>
