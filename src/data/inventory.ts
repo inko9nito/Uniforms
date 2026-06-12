@@ -100,6 +100,25 @@ export function isSoldOut(item: Pick<Item, 'availableCount' | 'reservedCount'>):
   return item.availableCount <= 0 && item.reservedCount <= 0;
 }
 
+/** Known store domains → display names. Anything else falls back to a prettified hostname. */
+const STORE_NAMES: Record<string, string> = {
+  'flynnohara.com': "Flynn O'Hara",
+  'cheddarup.com': 'Cheddar Up',
+};
+
+/** Derive a human store name from a listing URL, e.g. flynnohara.com → "Flynn O'Hara". */
+export function storeName(url: string): string | null {
+  try {
+    const host = new URL(url).hostname.replace(/^(www|my|shop|store)\./, '');
+    const known = STORE_NAMES[host];
+    if (known) return known;
+    const base = host.split('.')[0] ?? '';
+    return base ? base.charAt(0).toUpperCase() + base.slice(1) : null;
+  } catch {
+    return null;
+  }
+}
+
 function toItem(p: GeneratedProduct): Item {
   return {
     ...p,

@@ -4,10 +4,8 @@ import { Badge } from './ui/badge';
 import { Card } from './ui/card';
 import { Dialog, DialogContent } from './ui/dialog';
 import {
-  badgeVariant,
-  isSoldOut,
-  priceLabel,
   resolveImage,
+  storeName,
   type BadgeVariant,
   type Instance,
   type Item,
@@ -32,14 +30,11 @@ function statusVariant(status: string): BadgeVariant {
   return 'neutral';
 }
 
-function conditionVariant(condition: string): BadgeVariant {
-  const c = condition.toLowerCase();
-  if (c.includes('blemish') || c.includes('fair')) return 'warning';
-  if (c) return 'success'; // New with/without tags, Good
-  return 'neutral';
-}
-
-/** A single physical-garment card; its photo opens the lightbox when present. */
+/**
+ * A single physical garment, styled like the main grid cards: photo in a
+ * rounded white tile, text in the negative space below. Tapping the photo
+ * opens the lightbox when there is one.
+ */
 function InstanceCard({
   inst,
   item,
@@ -51,13 +46,13 @@ function InstanceCard({
 }) {
   const zoomable = !!inst.image;
   return (
-    <Card className="flex flex-col overflow-hidden">
+    <div className="min-w-0">
       <button
         type="button"
         onClick={zoomable ? () => onZoom({ images: [inst.image!], alt: inst.label }) : undefined}
         aria-label={zoomable ? `Enlarge photo of ${inst.label}` : undefined}
         className={cn(
-          'group relative block aspect-square w-full overflow-hidden bg-neutral-50',
+          'group relative block aspect-square w-full overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_2px_8px_-2px_rgba(15,16,26,0.06),0_12px_28px_-18px_rgba(15,16,26,0.20)] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
           zoomable ? 'cursor-zoom-in' : 'cursor-default',
         )}
       >
@@ -67,7 +62,7 @@ function InstanceCard({
               src={resolveImage(inst.image)}
               alt={inst.label}
               loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.03]"
             />
             <span className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-white/85 text-ink opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
               <ZoomIn size={15} />
@@ -77,17 +72,27 @@ function InstanceCard({
           <GarmentThumbnail item={item} />
         )}
       </button>
-      <div className="flex flex-col gap-2 p-3">
-        {inst.price != null && (
-          <p className="text-lg font-extrabold text-ink">{`$${inst.price.toFixed(2)}`}</p>
-        )}
-        <div className="flex flex-wrap gap-1.5">
-          {inst.condition && <Badge variant={conditionVariant(inst.condition)}>{inst.condition}</Badge>}
-          <Badge variant={statusVariant(inst.status)}>{inst.status}</Badge>
+
+      {/* Text in the negative space below the tile */}
+      <div className="mt-2 overflow-hidden px-0.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="truncate text-[11px] leading-snug text-ink-soft">
+            {inst.condition || ' '}
+          </span>
+          <Badge variant={statusVariant(inst.status)} className="flex-none px-2 py-0.5 text-[10px]">
+            {inst.status}
+          </Badge>
         </div>
-        {inst.conditionNotes && <p className="text-xs text-ink-soft">{inst.conditionNotes}</p>}
+        {inst.conditionNotes && (
+          <p className="mt-0.5 truncate text-[11px] leading-snug text-ink-soft" title={inst.conditionNotes}>
+            {inst.conditionNotes}
+          </p>
+        )}
+        {inst.price != null && (
+          <p className="mt-1 text-[14px] font-bold text-ink">{`$${inst.price.toFixed(2)}`}</p>
+        )}
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -152,11 +157,11 @@ export function ItemDetailPanel({ item, onClose }: Props) {
     if (s.x < 28 && dx > 70 && Math.abs(dy) < 50) onClose();
   };
 
-  const soldOut = current ? isSoldOut(current) : false;
   // Each physical garment in the listing (Sold ones are hidden), shown as its
   // own card — the photos buyers actually care about.
   const visibleInstances = current ? current.instances.filter((i) => i.status !== 'Sold') : [];
   const hasOfficialPhotos = !!current && current.images.length > 0;
+  const store = current?.sourceUrl ? storeName(current.sourceUrl) : null;
 
   return (
     <>
@@ -197,68 +202,67 @@ export function ItemDetailPanel({ item, onClose }: Props) {
         >
           {current && (
             <div className="flex flex-col gap-4">
-              {/* Header: small, downplayed official photo beside the key facts */}
-              <Card className="flex gap-4 p-4">
-                <button
-                  type="button"
-                  onClick={
-                    hasOfficialPhotos
-                      ? () => setLightbox({ images: current.images, alt: current.displayName })
-                      : undefined
-                  }
-                  aria-label={hasOfficialPhotos ? 'Enlarge product photo' : undefined}
-                  className={cn(
-                    'h-24 w-24 flex-none overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-50',
-                    hasOfficialPhotos ? 'cursor-zoom-in' : 'cursor-default',
-                  )}
-                >
-                  {hasOfficialPhotos ? (
-                    <img
-                      src={resolveImage(current.images[0]!)}
-                      alt={current.displayName}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <GarmentThumbnail item={current} />
-                  )}
-                </button>
-
-                <div className="min-w-0 flex-1">
-                  <h1 className="text-lg font-extrabold leading-tight text-ink">
-                    {current.displayName}
-                  </h1>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <span className="text-2xl font-extrabold text-ink">{priceLabel(current)}</span>
-                    {soldOut ? (
-                      <Badge variant="danger">Sold out</Badge>
-                    ) : (
-                      <Badge variant={badgeVariant(current.badge.tone)}>{current.badge.label}</Badge>
+              {/* Header: small, downplayed official photo beside the key facts.
+                  The original-listing link lives inside this card so it reads as
+                  part of the product header, separate from the instances below. */}
+              <Card className="p-4">
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={
+                      hasOfficialPhotos
+                        ? () => setLightbox({ images: current.images, alt: current.displayName })
+                        : undefined
+                    }
+                    aria-label={hasOfficialPhotos ? 'Enlarge product photo' : undefined}
+                    className={cn(
+                      'h-24 w-24 flex-none overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-50',
+                      hasOfficialPhotos ? 'cursor-zoom-in' : 'cursor-default',
                     )}
-                  </div>
-                  <dl className="mt-2.5 space-y-1 text-sm">
-                    <div className="flex gap-2">
-                      <dt className="w-14 flex-none font-medium text-ink-soft">Size</dt>
-                      <dd className="font-semibold text-ink">{current.size}</dd>
-                    </div>
-                    <div className="flex gap-2">
-                      <dt className="w-14 flex-none font-medium text-ink-soft">Campus</dt>
-                      <dd className="font-semibold text-ink">{current.schools.join(' & ')}</dd>
-                    </div>
-                  </dl>
-                </div>
-              </Card>
+                  >
+                    {hasOfficialPhotos ? (
+                      <img
+                        src={resolveImage(current.images[0]!)}
+                        alt={current.displayName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <GarmentThumbnail item={current} />
+                    )}
+                  </button>
 
-              {current.sourceUrl && (
-                <a
-                  href={current.sourceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="-mt-1 inline-flex items-center gap-1.5 self-start text-sm font-semibold text-brand hover:underline"
-                >
-                  <ExternalLink size={15} />
-                  View original store listing
-                </a>
-              )}
+                  <div className="min-w-0 flex-1">
+                    {store && (
+                      <p className="truncate text-[12px] font-medium text-ink-soft">{store}</p>
+                    )}
+                    <h1 className="text-lg font-extrabold leading-tight text-ink">
+                      {current.displayName}
+                    </h1>
+                    <dl className="mt-2.5 space-y-1 text-sm">
+                      <div className="flex gap-2">
+                        <dt className="w-14 flex-none font-medium text-ink-soft">Size</dt>
+                        <dd className="font-semibold text-ink">{current.size}</dd>
+                      </div>
+                      <div className="flex gap-2">
+                        <dt className="w-14 flex-none font-medium text-ink-soft">Campus</dt>
+                        <dd className="font-semibold text-ink">{current.schools.join(' & ')}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+
+                {current.sourceUrl && (
+                  <a
+                    href={current.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline"
+                  >
+                    <ExternalLink size={15} />
+                    View original store listing
+                  </a>
+                )}
+              </Card>
 
               {visibleInstances.length > 0 && (
                 <section className="mt-3 flex flex-col gap-3">
