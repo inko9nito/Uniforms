@@ -41,7 +41,7 @@ export function ItemCard({ item, onOpen }: Props) {
         ) : (
           <GarmentThumbnail item={item} />
         )}
-        <div className="absolute left-1.5 top-1.5">
+        <div className="absolute left-1.5 top-1.5 flex">
           {sold ? (
             <Badge variant="danger" className="px-2 py-0.5 text-[10px] shadow-sm">Sold out</Badge>
           ) : (
