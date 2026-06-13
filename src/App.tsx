@@ -124,29 +124,21 @@ export default function App() {
           <p className="mt-0.5 text-sm font-medium text-ink-soft">The Shops at Legacy, Plano</p>
         </header>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-ink-soft">
-              Campus
-            </label>
-            <Select
-              ariaLabel="Filter by campus"
-              value={schoolId}
-              onValueChange={setSchoolId}
-              options={SCHOOL_OPTIONS}
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-ink-soft">
-              Gender
-            </label>
-            <Select
-              ariaLabel="Filter by gender"
-              value={sectionId}
-              onValueChange={setSectionId}
-              options={GENDER_OPTIONS}
-            />
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            className="h-10 w-auto rounded-full"
+            ariaLabel="Filter by campus"
+            value={schoolId}
+            onValueChange={setSchoolId}
+            options={SCHOOL_OPTIONS}
+          />
+          <Select
+            className="h-10 w-auto rounded-full"
+            ariaLabel="Filter by gender"
+            value={sectionId}
+            onValueChange={setSectionId}
+            options={GENDER_OPTIONS}
+          />
         </div>
 
         <div className="mt-4">
