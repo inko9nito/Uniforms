@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ExternalLink, X, ZoomIn } from 'lucide-react';
+import { ChevronLeft, ExternalLink, ImageOff, X, ZoomIn } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent } from './ui/dialog';
 import {
@@ -36,11 +36,9 @@ function statusVariant(status: string): BadgeVariant {
  */
 function InstanceCard({
   inst,
-  item,
   onZoom,
 }: {
   inst: Instance;
-  item: Item;
   onZoom: (lb: Lightbox) => void;
 }) {
   const zoomable = !!inst.image;
@@ -68,7 +66,10 @@ function InstanceCard({
             </span>
           </>
         ) : (
-          <GarmentThumbnail item={item} />
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-ink-soft">
+            <ImageOff size={26} className="opacity-40" />
+            <span className="text-[11px] font-medium">Photo coming soon</span>
+          </div>
         )}
       </button>
 
@@ -269,7 +270,7 @@ export function ItemDetailPanel({ item, onClose }: Props) {
                   </h2>
                   <div className="grid grid-cols-2 gap-3">
                     {visibleInstances.map((inst) => (
-                      <InstanceCard key={inst.label} inst={inst} item={current} onZoom={setLightbox} />
+                      <InstanceCard key={inst.label} inst={inst} onZoom={setLightbox} />
                     ))}
                   </div>
                 </section>
